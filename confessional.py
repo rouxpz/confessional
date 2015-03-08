@@ -36,6 +36,9 @@ try:
 			counted.append(w)
 			indices.append(1)
 
+	s = 'say You said' + say
+	system(s)
+
 except LookupError:
 	#if the computer can't understand what was said
 	print("Could not understand audio")
