@@ -1,4 +1,6 @@
 from os import system
+import re
+import sys
 import speech_recognition as sr
 
 r = sr.Recognizer()
@@ -46,24 +48,40 @@ def searchWords(sentence):
 		else: #otherwise
 			print "No match for " + term
 
-
-#accesses the microphone and begins listening
-with sr.Microphone() as source:
-	print "Microphone accessed!"
-	audio = r.listen(source)
-
-try:
-	say = r.recognize(audio)
-
-	#begin text processing
-	say = say.lower() #convert everything to lowercase to avoid duplicates
-
-	countWords(say)
-	searchWords(say)
-
-	s = 'say You said' + say
+#computer speaking back to you if exit condition is not met
+def speak(sentence):
+	s = 'say You said' + sentence
 	system(s)
+	listen() #call listen() again to keep the program going until exit
 
-except LookupError:
-	#if the computer can't understand what was said
-	print("Could not understand audio")
+#computer listening to what you say
+def listen():
+	#accesses the microphone and begins listening
+	with sr.Microphone() as source:
+		print "Microphone accessed!"
+		audio = r.listen(source)
+
+	try:
+		say = r.recognize(audio)
+
+		#begin text processing
+		say = say.lower() #convert everything to lowercase to avoid duplicates
+
+		# countWords(say)
+		searchWords(say)
+
+		exitCondition = re.findall("goodbye", say)
+
+		if len(exitCondition) > 0:
+			s = 'say Goodbye'
+			system(s)
+			sys.exit(0)
+
+		else:
+			speak(say)
+
+	except LookupError:
+		#if the computer can't understand what was said
+		print("Could not understand audio")
+
+listen()
