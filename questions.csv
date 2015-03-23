@@ -1,0 +1,64 @@
+0;Nice to meet you.
+0;How are you doing today?
+0;How are you feeling these days?
+0;Tell me a bit about yourself. 
+0;What brings you here?
+0;What did you do today?
+0;What are you up to these days?
+0;What has your day been like thus far. 
+0;What brings you to this neighborhood?
+0;Where are you from?
+1;In the average day, how much time do you spend online?;tech;lifestyle
+1;If you could have dinner with anyone, living or dead, who would it be?;fame;wish
+1;Would you like to be famous? If you were famous, what would you like to be famous for?;fame;accomplish;wish
+1;Do you like to travel?;wish;world;happy;lifestyle,Where do you want to go?
+1;What's the coolest place you've been to?
+1;If you were going to be reincarnated, what do you think you'd come back as?;death;identity
+1;If you were going to be reincarnated as an object, what would you want to be?;death;identity;wish
+1;Which words or phrases do you like to use?;lifestyle;
+1;Describe your ideal day.;wish;happy;future
+1;Describe your ideal life.;wish;happy;future
+1;How do you cheer yourself up?;lifestyle;
+1;How do you calm yourself down?;lifestyle;
+1;What do you want to do in your life?;accomplish;wish;future
+1;What do you want to accomplish in your life?;accomplish;wish;future
+1;Tell me about your job.;career;lifestyle
+1;Describe your ideal job.;career;wish
+1;Describe your ideal career.;career;wish
+1;What would you do if you won the lottery tomorrow?;wish;money
+1;If you could change one thing about your life right now, what would you change?;wish;change;lifestyle
+1;If you could change one thing about the world right now, what would you change?;wish;change;world
+1;Do you follow the news?;world;opinion
+1;Are you worried about what's going on in the world today?;world;opinion;fear
+1;What are you worried about?;fear;identity
+1;What are you interested in?;passion;opinion;identity
+1;What are you thinking about these days?;opinion;lifestyle;identity
+1;Tell me about someone who inspires you.;passion;identity
+1;Tell me about someone or something that angers you.;passion;anger
+1;Tell me about someone or something that disgusts you.;anger;opinion;passion
+1;Describe one of your happiest memories.;happy;past
+1;Describe one of your strangest memories.;past;
+1;What's bothering you these days?;anger;opinion
+1;What are you excited about these days?;happy;opinion
+1;What are you worried about these days?;fear;opinion
+2;When you look back on your life, what are you proud of?;accomplish;happy;past
+2;When you look back on your life, what do you regret?;regret;past
+2;If a crystal ball could tell you the truth about anything or anyone, what would you ask?;wish;
+2;If a crystal ball could tell you the truth about anything or anyone, what would you be afraid to ask?;wish;fear
+2;Do you remember your dreams?;lifestyle;past;identity,Tell me about them.
+2;Describe a recurring dream.;identity;lifestyle
+2;Describe a recurring fantasy.;identity;lifestyle;wish;sex
+2;If you could wake up tomorrow having gained any one ability, what would it be?;change;wish;future
+2;If you knew you were going to die in a year, what would you change about your life?;change;wish;death
+2;If you knew you were going to die tomorrow, what would you do today?;change;wish;death
+2;What do you think your life will look like in ten years?;future;
+2;What do you want your life to look like in ten years?;future;wish
+2;What would your self from ten years ago think of your self today?;past;identity
+2;Are you privileged? How?;wish;happy;money
+2;Are you lucky? How?;wish;happy;money
+2;Finish this sentence: My life would be so much better if...;wish;change
+2;Finish this sentence: The world would be so much better if...;wish;change;world
+2;What in your future worries you most?;fear;future
+2;What in your future are you most excited about?;happy;future
+2;What is the greatest gift you have given to anyone?;past;happy;family;friends
+2;What is the greatest gift you have received?;past;happy;family;friends

@@ -2,12 +2,16 @@ from os import system
 import re
 import sys
 import speech_recognition as sr
+import csv
+from random import randrange
 
 r = sr.Recognizer()
-r.pause_threshold = 0.5
+r.pause_threshold = 0.8
 
 counted = []
 indices = []
+
+questionSet = [[],[],[],[],[],[],[],[],[]]
 
 #simple word count
 def countWords(sentence):
@@ -37,22 +41,19 @@ def countWords(sentence):
 def searchWords(sentence):
 
 	#temp terms using to test
-	terms = ["government", "nation", "people", "war", "monument"]
+	terms = ["past", "wish", "family", "friends", "death"]
 
 	for term in terms:
 		search = re.findall(term, sentence)
 
 		if len(search) > 0: #if a term was found
-			print term + " was used " + str(len(search)) + " times"
-
-		else: #otherwise
-			print "No match for " + term
+			# print term + " was used " + str(len(search)) + " times"
+			returnQuestion(term)
 
 #computer speaking back to you if exit condition is not met
 def speak(sentence):
-	s = 'say You said' + sentence
+	s = "say " + sentence
 	system(s)
-	listen() #call listen() again to keep the program going until exit
 
 #computer listening to what you say
 def listen():
@@ -77,11 +78,33 @@ def listen():
 			system(s)
 			sys.exit(0)
 
-		else:
-			speak(say)
-
 	except LookupError:
 		#if the computer can't understand what was said
 		print("Could not understand audio")
 
+def returnQuestion(term):
+	choose = []
+	for qs in questionSet:
+		for item in qs:
+			for i in range(1, len(item)):
+				if term in item[i]:
+					choose.append(item[0])
+	
+	#choose a random question to ask for now
+	selected = randrange(0, len(choose))
+	print str(selected) + ", " + choose[selected]
+	speak(choose[selected])
+	listen() #call listen() again to keep the program going until exit
+
+with open('questions.csv', 'rb') as f:
+	reader = csv.reader(f, delimiter=";")
+	for row in reader:
+		# print len(row)
+		toAdd = []
+		for i in range(1, len(row)):
+			toAdd.append(row[i])
+		# print(toAdd)
+		questionSet[int(row[0])].append(toAdd)
+
+# print questionSet[2]
 listen()
