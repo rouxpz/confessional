@@ -3,15 +3,11 @@ import re
 import sys
 from sphinxbase import *
 from pocketsphinx import *
-import speech_recognition as sr
 import csv
 import pyaudio
 import wave
 from random import randrange
 import collections
-
-r = sr.Recognizer()
-r.pause_threshold = 0.8
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -36,6 +32,8 @@ counted = []
 indices = []
 
 questionSet = []
+currentQuestion = 0
+followup = False
 
 #terms to select question
 terms = ["tech", "fame", "money", "wish", "accomplish", "past", "future", "secret", "death", "identity", "lifestyle", "career", "world", "change", "passion", "opinion", "fear", "anger", "happy", "sad", "regret", "love", "sex", "family", "friends", "ethics", "meta", "elaboration"]
@@ -65,6 +63,33 @@ def countWords(sentence):
 	print counted
 	print indices
 
+#checking if there's a follow up question present
+def checkFollowUp(sentence):
+	print "Current Question: " + str(currentQuestion)
+	global followup
+	print "Follow up status pre-question: " + str(followup)
+
+	if questionSet[currentQuestion][2] != '' and followup == False:
+		followup = True
+		print "there's a follow up here"
+		# print questionSet[currentQuestion][2]
+		speak(questionSet[currentQuestion][2])
+		listen()
+
+	elif followup == True:
+		if questionSet[currentQuestion][3] == 'intro':
+			followup = False
+			returnQuestion("first")
+						
+		elif questionSet[currentQuestion][3] != 'intro':
+			followup = False
+
+	elif questionSet[currentQuestion][3] == 'intro':
+		returnQuestion("first")
+
+	else:
+		searchWords(sentence)
+
 #searching input phrase with regular expressions & emotional lexicon
 def searchWords(sentence):
 
@@ -85,21 +110,31 @@ def searchWords(sentence):
 				numbers.append(number)
 		
 		for emotion in emotions:
-			for s in split:
-				if emotion[0] == s:
-
+			er = r"\s" + emotion[0] + r"\s"
+			emotion_match = re.search(er, sentence)
+			if emotion_match != None:
+				if len(emotion) < 10:
 					for i in range(1, len(emotion)):
 						print emotion[0] + ", " + emotion[i]
 						emotionsUsed.append(emotion[i])
 
 		# print emotionsUsed
 		counter = collections.Counter(emotionsUsed)
+		print counter
 		if counter:
-			max_emotion = max(counter.values())
-			for key, value in counter.items():
-				if value == max_emotion:
-					print key
+			ordered = counter.most_common()
+			print ordered
+			max_emotion, max_value = ordered[0]
+			second_emotion, second_value = ordered[1]
+			# print max_emotion + ", " + second_emotion
+			if max_value > second_value:
+				returnQuestion(max_emotion)
+			else:
+				print "elaboration necessary"
+				returnQuestion("elaboration")
+
 		else:
+			print "elaboration necessary"
 			returnQuestion("elaboration")
 
 		# print usedTerms
@@ -108,16 +143,16 @@ def searchWords(sentence):
 			index = numbers.index(max_term)
 			print usedTerms[index]
 
-		returnQuestion("love")
+		# returnQuestion(usedTerms[index])
 
 	else:
 
 		returnQuestion("elaboration")
-		# print ("elaboration necessary")
+		print ("elaboration necessary")
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
-	filename = "/PATH/TO/audio files/" + str(number) + ".wav"
+	filename = "/Users/roopanew/Desktop/FREELANCE/*Pop Up Confessional/audio files/OLD/" + str(number) + ".wav"
 	f = wave.open(filename,"rb") 
 
 	pa = pyaudio.PyAudio()
@@ -216,41 +251,13 @@ def listen():
 	print "Program ended"
 	print final
 
-#computer listening to what you say -- google API version
-def listen_sr():
-	#accesses the microphone and begins listening
-	with sr.Microphone() as source:
-		print "Microphone accessed!"
-		audio = r.listen(source)
-
-	try:
-		say = r.recognize(audio)
-
-		#begin text processing
-		say = say.lower() #convert everything to lowercase to avoid duplicates
-
-		exitCondition = re.findall("goodbye", say)
-
-		if len(exitCondition) > 0:
-			s = 'say Goodbye'
-			system(s)
-			sys.exit(0)
-
-		else:
-			# countWords(say)
-			searchWords(say)
-
-	except LookupError:
-		#if the computer can't understand what was said
-		print("Could not understand audio, try again")
-		listen()
 
 def returnQuestion(term):
 	selection = []
 
 	for q in questionSet:
 		if q[len(q) - 1] != "used":
-			for i in range(2, len(q)):
+			for i in range(3, len(q)):
 				if q[i] == term:
 					# print q
 					selection.append(q)
@@ -262,7 +269,13 @@ def returnQuestion(term):
 		if chosen[1] == q[1]:
 			q.append("used")
 	
+	# modify current question to eventually see if there's a tied in follow up
+	global currentQuestion
+	currentQuestion = questionSet.index(chosen)
+	print "Current Question: " + str(currentQuestion)
+
 	#choose a random question to ask for now
+	print chosen[0]
 	speak(chosen[1])
 	listen() #call listen() again to keep the program going until exit
 
