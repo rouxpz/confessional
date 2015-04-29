@@ -1,13 +1,8 @@
 from os import system
-import re
-import sys
+import re, sys, time, csv, pyaudio, wave, collections
 from sphinxbase import *
 from pocketsphinx import *
-import csv
-import pyaudio
-import wave
 from random import randrange
-import collections
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -25,6 +20,8 @@ config = Decoder.default_config()
 config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
+config.set_float('-vad_threshold', 4.0)
+config.set_int('-vad_postspeech', 200)
 
 decoder = Decoder(config)
 
@@ -34,10 +31,12 @@ indices = []
 questionSet = []
 currentQuestion = 0
 followup = False
+lastSavedTime = 0
 
 #terms to select question
 terms = ["tech", "fame", "money", "wish", "accomplish", "past", "future", "secret", "death", "identity", "lifestyle", "career", "world", "change", "passion", "opinion", "fear", "anger", "happy", "sad", "regret", "love", "sex", "family", "friends", "ethics", "meta", "elaboration"]
 
+#empty list to store emotional content
 emotions = []
 
 #simple word count
@@ -125,13 +124,17 @@ def searchWords(sentence):
 			ordered = counter.most_common()
 			print ordered
 			max_emotion, max_value = ordered[0]
-			second_emotion, second_value = ordered[1]
-			# print max_emotion + ", " + second_emotion
-			if max_value > second_value:
-				returnQuestion(max_emotion)
+
+			if len(ordered) > 1:
+				second_emotion, second_value = ordered[1]
+				# print max_emotion + ", " + second_emotion
+				if max_value > second_value:
+					returnQuestion(max_emotion)
+				else:
+					print "elaboration necessary"
+					returnQuestion("elaboration")
 			else:
-				print "elaboration necessary"
-				returnQuestion("elaboration")
+				returnQuestion(max_emotion)
 
 		else:
 			print "elaboration necessary"
@@ -146,15 +149,15 @@ def searchWords(sentence):
 		# returnQuestion(usedTerms[index])
 
 	else:
-
 		returnQuestion("elaboration")
 		print ("elaboration necessary")
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
-	filename = "/Users/roopanew/Desktop/FREELANCE/*Pop Up Confessional/audio files/OLD/" + str(number) + ".wav"
+	filename = "/PATH/TO/audio files/" + str(number) + "_1.wav"
 	f = wave.open(filename,"rb") 
 
+	#open pyaudio instance
 	pa = pyaudio.PyAudio()
 
 	stream = pa.open(format = pa.get_format_from_width(f.getsampwidth()),  
@@ -174,10 +177,10 @@ def speak(number):
 	stream.stop_stream()  
 	stream.close()  
 
-	#close PyAudio  
+	#close pyaudio instance
 	pa.terminate()
 
-#computer listening to what you say -- pocketsphinx version
+#computer listening to what you say
 def listen():
 	p = pyaudio.PyAudio()
 	 
@@ -190,6 +193,7 @@ def listen():
 	# stream.start_stream()
 	in_speech_bf = True
 	decoder.start_utt()
+	lastSavedTime = time.time()
 	print "Listening"
 
 	while True:
@@ -220,6 +224,8 @@ def listen():
 		                    if  decoder.hyp().hypstr != '':
 								final = str(decoder.hyp().hypstr).lower()
 								print'Stream decoding result: ' + final
+								print "Elapsed time: " + str(time.time() - lastSavedTime)
+
 								exitCondition = re.findall("goodbye", final)
 
 								if len(exitCondition) > 0:
@@ -229,7 +235,7 @@ def listen():
 
 								else:
 									words = final.split(' ')
-									searchWords(final)
+									checkFollowUp(final)
 									print words
 									break
 		                    else:
@@ -251,7 +257,7 @@ def listen():
 	print "Program ended"
 	print final
 
-
+#selecting a question to return to participant
 def returnQuestion(term):
 	selection = []
 
@@ -312,6 +318,5 @@ with open('files/questions.csv', 'rb') as f:
 
 print "Questions loaded!"
 
-#introduction and first question; returnQuestion() sets off the listening loop
-speak(questionSet[0][1])
+#introduction and first question, sets off the listening loop
 returnQuestion("intro")
