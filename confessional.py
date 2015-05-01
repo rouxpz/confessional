@@ -170,7 +170,7 @@ def searchWords(sentence):
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
-	filename = "/Users/roopanew/Desktop/FREELANCE/*Pop Up Confessional/audio files/" + str(number) + "_1.wav"
+	filename = "/PATH/TO/audio files/" + str(number) + "_1.wav"
 	f = wave.open(filename,"rb") 
 
 	#open pyaudio instance
