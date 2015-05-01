@@ -33,6 +33,7 @@ currentQuestion = 0
 questionCount = 0
 followup = False
 lastSavedTime = time.time()
+text = ''
 
 #terms to select question
 terms = ["tech", "fame", "money", "wish", "accomplish", "past", "future", "secret", "death", "identity", "lifestyle", "career", "world", "change", "passion", "opinion", "fear", "anger", "happy", "sad", "regret", "love", "sex", "family", "friends", "ethics", "meta", "elaboration"]
@@ -94,11 +95,11 @@ def checkFollowUp(sentence):
 		returnQuestion("third")
 
 	else:
-		searchWords(sentence)
+		returnQuestion(sentence)
 
 #searching input phrase with regular expressions & emotional lexicon
 def searchWords(sentence):
-
+	tag = ''
 	split = sentence.split(" ")
 	if len(split) > 10:
 		usedTerms = []
@@ -136,16 +137,20 @@ def searchWords(sentence):
 				second_emotion, second_value = ordered[1]
 				# print max_emotion + ", " + second_emotion
 				if max_value > second_value:
-					returnQuestion(max_emotion)
+					# returnQuestion(max_emotion)
+					tag = max_emotion
 				else:
 					print "elaboration necessary"
-					returnQuestion("elaboration")
+					# returnQuestion("elaboration")
+					tag = 'elaboration'
 			else:
-				returnQuestion(max_emotion)
+				# returnQuestion(max_emotion)
+				tag = max_emotion
 
 		else:
 			print "elaboration necessary"
-			returnQuestion("elaboration")
+			# returnQuestion("elaboration")
+			tag = 'elaboration'
 
 		# print usedTerms
 		if len(numbers) > 1:
@@ -156,12 +161,16 @@ def searchWords(sentence):
 		# returnQuestion(usedTerms[index])
 
 	else:
-		returnQuestion("elaboration")
+		# returnQuestion("elaboration")
+		tag = 'elaboration'
 		print ("elaboration necessary")
+
+	print "tag: " + tag
+	return tag
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
-	filename = "/PATH/TO/audio files/" + str(number) + "_1.wav"
+	filename = "/Users/roopanew/Desktop/FREELANCE/*Pop Up Confessional/audio files/" + str(number) + "_1.wav"
 	f = wave.open(filename,"rb") 
 
 	#open pyaudio instance
@@ -204,7 +213,10 @@ def listen():
 
 	global lastSavedTime
 	lastSavedTime = time.time()
+	tag = ''
 	print "Listening"
+
+	global text
 
 	while True:
 
@@ -221,9 +233,11 @@ def listen():
 		                print text
 		                print "Elapsed time: " + str(time.time() - lastSavedTime)
 
+		                #process input text after every 10 seconds
 		                if time.time() - lastSavedTime >= 10:
 		                	print "text at 10 second chunk: " + text
-		                	countWords(text)
+		                	# countWords(text)
+		                	tag = searchWords(text)
 		                	lastSavedTime = time.time()
 		            else:
 		            	print "BLANK"
@@ -236,6 +250,9 @@ def listen():
 		            in_speech_bf = decoder.get_in_speech()
 		            if not in_speech_bf:
 		                decoder.end_utt()
+		                if text != '':
+			                tag = searchWords(text)
+			            	print "final text: " + text
 		                print "Elapsed time: " + str(time.time() - lastSavedTime)
 		                lastSavedTime = time.time()
 		                print "Finishing, one moment..."
@@ -253,7 +270,7 @@ def listen():
 
 								else:
 									# words = final.split(' ')
-									checkFollowUp(final)
+									checkFollowUp(tag)
 									# print words
 									continue
 		                    else:
