@@ -21,7 +21,7 @@ config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
 config.set_float('-vad_threshold', 4.0)
-config.set_int('-vad_postspeech', 200)
+config.set_int('-vad_postspeech', 100)
 
 decoder = Decoder(config)
 
@@ -30,8 +30,9 @@ indices = []
 
 questionSet = []
 currentQuestion = 0
+questionCount = 0
 followup = False
-lastSavedTime = 0
+lastSavedTime = time.time()
 
 #terms to select question
 terms = ["tech", "fame", "money", "wish", "accomplish", "past", "future", "secret", "death", "identity", "lifestyle", "career", "world", "change", "passion", "opinion", "fear", "anger", "happy", "sad", "regret", "love", "sex", "family", "friends", "ethics", "meta", "elaboration"]
@@ -85,6 +86,12 @@ def checkFollowUp(sentence):
 
 	elif questionSet[currentQuestion][3] == 'intro':
 		returnQuestion("first")
+
+	elif questionCount == 6:
+		returnQuestion("second")
+
+	elif questionCount == 12:
+		returnQuestion("third")
 
 	else:
 		searchWords(sentence)
@@ -188,12 +195,14 @@ def listen():
 	            channels=CHANNELS,
 	            rate=RATE,
 	            input=True,
-	            input_device_index=2,
+	            input_device_index=0,
 	            frames_per_buffer=CHUNK)
 
 	# stream.start_stream()
 	in_speech_bf = True
 	decoder.start_utt()
+
+	global lastSavedTime
 	lastSavedTime = time.time()
 	print "Listening"
 
@@ -208,7 +217,14 @@ def listen():
 		        try:
 		            if  decoder.hyp().hypstr != '':
 		                text = str(decoder.hyp().hypstr).lower()
-		                print 'Partial decoding result: ' + str(decoder.hyp().hypstr).lower()
+		                # print 'Partial decoding result: ' + str(decoder.hyp().hypstr).lower()
+		                print text
+		                print "Elapsed time: " + str(time.time() - lastSavedTime)
+
+		                if time.time() - lastSavedTime >= 10:
+		                	print "text at 10 second chunk: " + text
+		                	countWords(text)
+		                	lastSavedTime = time.time()
 		            else:
 		            	print "BLANK"
 		        except AttributeError:
@@ -220,14 +236,15 @@ def listen():
 		            in_speech_bf = decoder.get_in_speech()
 		            if not in_speech_bf:
 		                decoder.end_utt()
+		                print "Elapsed time: " + str(time.time() - lastSavedTime)
+		                lastSavedTime = time.time()
 		                print "Finishing, one moment..."
 		                try:
 		                    if  decoder.hyp().hypstr != '':
 								final = str(decoder.hyp().hypstr).lower()
 								print'Stream decoding result: ' + final
-								print "Elapsed time: " + str(time.time() - lastSavedTime)
 
-								exitCondition = re.findall("goodbye", final)
+								exitCondition = re.findall("good-bye", final)
 
 								if len(exitCondition) > 0:
 									s = 'say Goodbye'
@@ -235,10 +252,10 @@ def listen():
 									sys.exit(0)
 
 								else:
-									words = final.split(' ')
+									# words = final.split(' ')
 									checkFollowUp(final)
-									print words
-									break
+									# print words
+									continue
 		                    else:
 		                    	print "BLANK"
 		                except AttributeError:
@@ -261,6 +278,7 @@ def listen():
 #selecting a question to return to participant
 def returnQuestion(term):
 	selection = []
+	doNotReuse = ["first", "second", "third", "intro"]
 
 	for q in questionSet:
 		if q[len(q) - 1] != "used":
@@ -273,14 +291,26 @@ def returnQuestion(term):
 	chosen = selection[rand]
 
 	for q in questionSet:
-		if chosen[1] == q[1]:
-			q.append("used")
+		for d in doNotReuse:
+			if chosen[1] == q[1]:
+				if q[-1] != d:
+					pass
+				else:
+					q.append("used")
+					print q
 	
 	# modify current question to eventually see if there's a tied in follow up
 	global currentQuestion
 	currentQuestion = questionSet.index(chosen)
 	print "Current Question: " + str(currentQuestion)
 
+	global questionCount
+	questionCount += 1
+	print questionCount
+
+	global lastSavedTime
+	print "Elapsed time: " + str(time.time() - lastSavedTime)
+	lastSavedTime = time.time()
 	#choose a random question to ask for now
 	print chosen[0]
 	speak(chosen[1])
