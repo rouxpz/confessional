@@ -35,6 +35,8 @@ followup = False
 lastSavedTime = time.time()
 text = ''
 
+totalTags = []
+
 #terms to select question
 terms = ["tech", "fame", "money", "wish", "accomplish", "past", "future", "secret", "death", "identity", "lifestyle", "career", "world", "change", "passion", "opinion", "fear", "anger", "happy", "sad", "regret", "love", "sex", "family", "friends", "ethics", "meta", "elaboration"]
 
@@ -98,6 +100,7 @@ def checkFollowUp(sentence):
 		returnQuestion(sentence)
 
 #searching input phrase with regular expressions & emotional lexicon
+#!!! REWRITE THIS to match tags in list rather than select a single tag !!!
 def searchWords(sentence):
 	tag = ''
 	split = sentence.split(" ")
@@ -170,7 +173,7 @@ def searchWords(sentence):
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
-	filename = "/PATH/TO/audio files/" + str(number) + "_1.wav"
+	filename = "/Users/roopanew/Desktop/FREELANCE/*Pop Up Confessional/audio files/" + str(number) + "_1.wav"
 	f = wave.open(filename,"rb") 
 
 	#open pyaudio instance
@@ -211,12 +214,11 @@ def listen():
 	in_speech_bf = True
 	decoder.start_utt()
 
-	global lastSavedTime
+	global lastSavedTime, text
 	lastSavedTime = time.time()
 	tag = ''
+	savedText = ''
 	print "Listening"
-
-	global text
 
 	while True:
 
@@ -230,19 +232,27 @@ def listen():
 		            if  decoder.hyp().hypstr != '':
 		                text = str(decoder.hyp().hypstr).lower()
 		                # print 'Partial decoding result: ' + str(decoder.hyp().hypstr).lower()
-		                print text
+		                # print text
 		                print "Elapsed time: " + str(time.time() - lastSavedTime)
 
 		                #process input text after every 10 seconds
 		                if time.time() - lastSavedTime >= 10:
-		                	print "text at 10 second chunk: " + text
-		                	# countWords(text)
-		                	tag = searchWords(text)
+
+		                	#only process newest chunk of text, rather than whole thing
+		                	toSplit = re.compile('%s(.*)'%savedText)
+		                	m = toSplit.search(text)
+		                	textChunk = group(1)
+		                	print "text at 10 second chunk: " + textChunk
+		                	tag = searchWords(textChunk)
+		                	totalTags.append(tag)
+		                	savedtext = ''
 		                	lastSavedTime = time.time()
 		            else:
 		            	print "BLANK"
+
 		        except AttributeError:
 		            pass
+
 		        if decoder.get_in_speech():
 		            sys.stdout.write('.')
 		            sys.stdout.flush()
@@ -252,10 +262,12 @@ def listen():
 		                decoder.end_utt()
 		                if text != '':
 			                tag = searchWords(text)
+			                totalTags.append(tag)
 			            	print "final text: " + text
 		                print "Elapsed time: " + str(time.time() - lastSavedTime)
 		                lastSavedTime = time.time()
 		                print "Finishing, one moment..."
+		                print totalTags
 		                try:
 		                    if  decoder.hyp().hypstr != '':
 								final = str(decoder.hyp().hypstr).lower()
@@ -282,6 +294,7 @@ def listen():
 		    else:
 		        break
 
+		# this is to account for buffer overflows
 		except IOError as io:
 			print "Buffer overflowed, please try again"
 
@@ -328,6 +341,10 @@ def returnQuestion(term):
 	global lastSavedTime
 	print "Elapsed time: " + str(time.time() - lastSavedTime)
 	lastSavedTime = time.time()
+
+	#clear tags from previous question
+	totalTags = []
+
 	#choose a random question to ask for now
 	print chosen[0]
 	speak(chosen[1])
