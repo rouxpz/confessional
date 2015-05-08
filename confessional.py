@@ -97,10 +97,9 @@ def checkFollowUp(sentence):
 		returnQuestion("third")
 
 	else:
-		returnQuestion(sentence)
+		returnQuestion(tagList)
 
 #searching input phrase with regular expressions & emotional lexicon
-#!!! REWRITE THIS to match tags in list rather than select a single tag !!!
 def searchWords(sentence):
 	tag = ''
 	split = sentence.split(" ")
@@ -241,11 +240,15 @@ def listen():
 		                	#only process newest chunk of text, rather than whole thing
 		                	toSplit = re.compile('%s(.*)'%savedText)
 		                	m = toSplit.search(text)
-		                	textChunk = group(1)
+		                	textChunk = m.group(1)
 		                	print "text at 10 second chunk: " + textChunk
+
+		                	#select tag for text chunk, and add it to the list of tags for this response
 		                	tag = searchWords(textChunk)
 		                	totalTags.append(tag)
-		                	savedtext = ''
+
+		                	#reset saved text and time
+		                	savedText = ''
 		                	lastSavedTime = time.time()
 		            else:
 		            	print "BLANK"
@@ -254,15 +257,21 @@ def listen():
 		            pass
 
 		        if decoder.get_in_speech():
-		            sys.stdout.write('.')
+		            # sys.stdout.write('.')
 		            sys.stdout.flush()
 		        if decoder.get_in_speech() != in_speech_bf:
 		            in_speech_bf = decoder.get_in_speech()
 		            if not in_speech_bf:
 		                decoder.end_utt()
 		                if text != '':
-			                tag = searchWords(text)
+
+		                	#search and tag the last chunk of text
+		                	toSplit = re.compile('%s(.*)'%savedText)
+		                	m = toSplit.search(text)
+		                	textChunk = m.group(1)
+			                tag = searchWords(textChunk)
 			                totalTags.append(tag)
+
 			            	print "final text: " + text
 		                print "Elapsed time: " + str(time.time() - lastSavedTime)
 		                lastSavedTime = time.time()
@@ -282,7 +291,7 @@ def listen():
 
 								else:
 									# words = final.split(' ')
-									checkFollowUp(tag)
+									checkFollowUp(totalTags)
 									# print words
 									continue
 		                    else:
@@ -306,23 +315,36 @@ def listen():
 	print final
 
 #selecting a question to return to participant
-def returnQuestion(term):
+#!!! REWRITE THIS to match tags in list rather than select a single tag !!!
+def returnQuestion(tagList):
 	selection = []
+	score = 0
+	chosenQuestion = ''
 	doNotReuse = ["first", "second", "third", "intro"]
 
 	for q in questionSet:
-		if q[len(q) - 1] != "used":
-			for i in range(3, len(q)):
-				if q[i] == term:
-					# print q
-					selection.append(q)
 
-	rand = randrange(0, len(selection))
-	chosen = selection[rand]
+		#initialize score of 0
+		questionScore = 0
+
+		#go through tags in tag list to find matches
+		for t in tagList:
+			if q[len(q) - 1] != "used":
+				for i in range(3, len(q)):
+					if q[i] == t:
+						# add to question score
+						questionScore += 1
+
+		if questionScore >= score:
+			score = questionScore
+			chosenQuestion = q
+
+	# rand = randrange(0, len(selection))
+	# chosen = selection[rand]
 
 	for q in questionSet:
 		for d in doNotReuse:
-			if chosen[1] == q[1]:
+			if chosenQuestion[1] == q[1]:
 				if q[-1] != d:
 					pass
 				else:
@@ -331,7 +353,7 @@ def returnQuestion(term):
 	
 	# modify current question to eventually see if there's a tied in follow up
 	global currentQuestion
-	currentQuestion = questionSet.index(chosen)
+	currentQuestion = questionSet.index(chosenQuestion)
 	print "Current Question: " + str(currentQuestion)
 
 	global questionCount
@@ -342,13 +364,15 @@ def returnQuestion(term):
 	print "Elapsed time: " + str(time.time() - lastSavedTime)
 	lastSavedTime = time.time()
 
-	#clear tags from previous question
+	#clear tags from previous response
 	totalTags = []
 
-	#choose a random question to ask for now
-	print chosen[0]
-	speak(chosen[1])
-	listen() #call listen() again to keep the program going until exit
+	#ask highest scoring question
+	print chosenQuestion[0]
+	speak(chosenQuestion[1])
+
+	#call listen() again to keep the program going until exit
+	listen()
 
 
 ##### MAIN SCRIPT #####
