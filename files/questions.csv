@@ -7,43 +7,79 @@ Hello? Hi, how are you? I'm good. So what brings you in here? Is there anything 
 Hello? Hi, how are you? I'm good. So what brings you in here? Is there anything in particular you want to talk about?;Hello5a;Hello7a;intro
 Hello? Hi, how are you? Well so, I'm here to learn about you, whatever you want to talk about. What have you been thinking about these days?;Hello6a;Hello7a;intro
 Do you have any stories that you love to tell? Can you tell one to me?;Stories1a;;first
-Do you think you're a funny person? Do you have any funny stories you like to tell?;Stories2a;;first
-What would your perfect day be like?;Perfectday;;first
-Would you like to be famous? In what way?;Famous;;first
-What are you most grateful for in your life?;Grateful;;first
+Do you think you're a funny person? Do you have any funny stories you like to tell?;Stories2a;;first;identity;humor
+What would your perfect day be like?;Perfectday;;first;wish;joy
+Would you like to be famous? In what way?;Famous;;first;fame;wish;lifestyle
+What's the most interesting thing about you?interestingthing;;first;identity
+What are you most grateful for in your life?;Grateful;;first;lifestyle;love;family;friends;joy
 Can you tell me one of your happiest memories?;Memoryhappy1;;first
-What's the most challenging thing in your life right now?;Challenge;;first
-What is your most treasured memory?;Memoryhappy2;Memorysad1;first
-Can you tell me about an embarrassing moment in your life? Something that you don't talk about much?;Memoryembarrassing;;second
-Tell me an embarrassing moment in your life. Something that you don't really like to think about.;Memoryembarrassing2;;second
-Do you feel in control of your life? Are you happy with your life?;Happylife;;second
-Tell me about a time when you were really happy.;Pasthappy;;second
-What was your childhood like?;Childhood;Childhood2;second
-When's the last time you cried in front of another person?;Crying1;Whathappened1;third
-When's the last time you cried by yourself?;Crying2;Whathappened1;third
-Do you have any secret hobbies that you feel embarrassed about?;Secrethobbies;;third
-Do you have any thoughts or hobbies that you don't talk about much, but that you feel like you'd want to talk about with me?;Secrethobbies2;;third
+What's the most challenging thing in your life right now?;Challenge;;first;lifestyle;career;fear
+If you knew you had one year left to live, what would you change about the way you’re living?;oneyear;;first;lifestyle;change
+What is your most treasured memory?;Memoryhappy2;Memorysad1;first;past;family;friends;joy
+What is your most terrible memory?;Memorysad1;;past;regret;sadness
+Would you rather stand out in a crowd, or fit in? Is it something you’ve thought about recently?;standout;;second;wish;identity
+Can you tell me about an embarrassing moment in your life? Something that you don't talk about much?;Memoryembarrassing;;second;past;regret;disgust
+Tell me an embarrassing moment in your life. Something that you don't really like to think about.;Memoryembarrassing2;;second;past;regret;disgust
+Is there anything about your body or personality that embarrasses you?;embarrassing1;;second;identity;regret;disgust
+Do you feel in control of your life? Are you happy with your life?;Happylife;;second;future;lifestyle;career;love;family;friends;joy;anticipation
+Tell me about a time when you were really happy.;Pasthappy;;second;past;love;family;friends;career;joy;trust
+What was your childhood like?;Childhood;Childhood2;second;past;identity
+If you could change anything about the way you were raised, what would it be?;Childhood2;;past;change;regret
+What was your first experience with death?;death1;;second;past;sadness;anger;disgust;fear
+What do you want your life to look like in ten years?;tenyears;;second;future;change;wish
+Do you have a lot of regrets? What are they?;regrets;;second;past;regret;ethics
+How do you feel about your relationship with your mother?;mother;;second;family;love
+Do you find yourself lying from time to time?;lyingsometimes;lyingaboutwhat;second;trust
+What’s a lie that you’ve told that you think about often?;lyingmemory;;trust
+Have you lied to me?;lyingtome;;trust
+What do you want to change in your personal life?;personallifechange;;second;change;wish;career;career;lifestyle;love
+Do you feel that you have enough love in your life? That you have enough people whom you love and who love you?;enoughlove;worthyoflove;second;love;lifestyle
+This is kind of a big question. Why are you worthy of love? Why do you deserve to be loved?;worthyoflove;greatestaccomplishment;love
+Can you tell me about a time when you felt you were treated unfairly? Maybe by your parents, or someone at work?;unfair;;second;past;ethics;anger
+Is there anything in your past that would surprise the people who know you well?;surprisingpast;;second;past;secret;anger;sadness
+Can you tell me something that you don’t tell anyone? Like your biggest secret?;bigsecret;;third;past;secret;trust
+When's the last time you cried in front of another person?;Crying1;Whathappened1;third;past;regret;sadness
+When's the last time you cried by yourself?;Crying2;Whathappened1;third;past;regret;sadness
+Do you have any secret hobbies that you feel embarrassed about?;Secrethobbies;;third;secret;lifestyle;trust
+Can you tell me about a recurring dream you’ve had throughout your life?;dream1;;third;identity;regret;love;sex;family
+Have you ever committed a crime?;crime1;;third;ethics;past
+Have you ever stolen anything? Like, from a store, or from your parents, or someone’s house?;stolenanything;;third;ethics;past
+Can you tell me about something in your past that you regret? Like that you think about a lot?;regret1;;third;regret;ethics;sadness
+Is there anything that you’ve spent a long time trying to forget?;forget1;;third;ethics;regret
+How do you usually deal with feelings of guilt?;guilt;;regret;ethics;disgust;sadness
+Do you have any thoughts or hobbies that you don't talk about much, but that you feel like you'd want to talk about with me?;Secrethobbies2;;third;secret;lifestyle
+Tell me about the first time you fell in love.;firstlove;;third;past;love;surprise;joy
+Tell me about a fantasy that you have.;fantasy1;;third;sex;love;anticipation;joy
+Tell me about the last time you were turned on. What happened? What were you thinking about?;turnedon;;third;sex;joy
+What is an ideal sexual partner like for you? Or what is an ideal sexual encounter.;idealsex;;third;sex;joy
+Have you ever had your heart broken? Can you tell me about it?;heartbreak;;third;love;sadness
+Have you ever felt betrayed?;betrayed;;third;love;ethics;sadness;anger
+Do you sometimes feel disappointed in yourself? Can you tell me about it?;disappointed;;third;regret;ethics;sadness;disgust
+What’s the worst thing you’ve done to someone you care about?;worstthing;;third;regret;ethics;family;friends;anger;disgust
 What's the first thing that comes to mind?;Elaborate1a;;neutral;elaboration
 Can you tell me about it?;Elaborate2a;;neutral;elaboration
 Say more about that.;Elaborate3a;;neutral;elaboration
-How does it make you feel to talk to me about it?;Feel1a;;neutral;reflection
+How does it make you feel to talk to me about it?;Feel1a;;neutral;reflection;sadness;anger;disgust
+How did that make you feel?;feel2a;;neutral;reflection;sadness;anger;disgust
+How does that make you feel?;howdoyoufeel;;neutral;reflection;sadness;anger;disgust
 That sounds like quite a shock.;surprise3;;neutral;surprise
 I would not have expected that.;surprise4;;neutral;surprise
-Hmm. That's interesting.;Sadness1a;;negative;sadness
-Do you think it's sadness that's behind what you're telling me? The things you just told me?;Sadness4;;negative;sadness
+Hmm. That's interesting.;Sadness1a;;negative;sadness;anger;disgust;fear;surprise
+Do you think it's sadness that's behind what you're telling me? The things you just told me?;Sadness4;;negative;sadness;anger
 Do you feel sad a lot? Do you feel sad about this?;Sadness5;;negative;sadness
-Do you feel like this is coming from a place of sadness for you?;Sadness6;;negative;sadness
-Do you think of yourself as a temperamental person in general? Do you feel angry about this?;Anger3;;negative;anger
-Is what you just told me rooted in anger?;Anger4;;negative;anger
-Does it disgust you?;Disgust3;;negative;disgust
-The stuff that you've been telling me...does it disgust you?;Disgust4;;negative;disgust
-Are you worried about it?;Fear1;;negative;fear
-Are you worried about it? Do you feel afraid?;Fear3;;negative;fear
-Yeah that seems like, I don't even know what to say about that.;surprise1a;;positive;surprise
-Wow, that sounds like quite the experience!;surprise2a;;positive;surprise
-Wow, that sounds like quite the experience!;surprise2b;;positive;surprise
-Are you excited about it? Or maybe a little worried?;Anticipation3;;positive;anticipation
+Do you feel like this is coming from a place of sadness for you?;Sadness6;;negative;sadness;anger;disgust
+Do you think of yourself as a temperamental person in general? Do you feel angry about this?;Anger3;;negative;anger;disgust
+Is what you just told me rooted in anger?;Anger4;;negative;anger;disgust
+Does it disgust you?;Disgust3;;negative;disgust;anger
+The stuff that you've been telling me...does it disgust you?;Disgust4;;negative;disgust;anger
+Are you worried about it?;Fear1;;negative;fear;anticipation
+Are you worried about it? Do you feel afraid?;Fear3;;negative;fear;anticipation
+Yeah that seems like, uh, I don’t even know.;idontevenknow;;sadness;anger;disgust;fear;surprise
+Yeah that seems like, I don't even know what to say about that.;surprise1a;;positive;surprise;joy
+Wow, that sounds like quite the experience!;surprise2a;;positive;surprise;joy
+Wow, that sounds like quite the experience!;surprise2b;;positive;surprise;joy
+Are you excited about it? Or maybe a little worried?;Anticipation3;;positive;anticipation;joy
 Are you happy about it?;Joy4a;;positive;joy
 Are you happy about it?;Joy4b;;positive;joy
-Do you think what you're saying has to do with the way you trust people, or the way they trust you?;Trust1a;;positive;trust
-Do you think what you're saying has to do with the way you trust people, or the way they trust you?;Trust1b;;positive;trust
+Do you think what you're saying has to do with the way you trust people, or the way they trust you?;Trust1a;;positive;fear;trust
+Do you think what you're saying has to do with the way you trust people, or the way they trust you?;Trust1b;;positive;fear;trust

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from os import system
 import re, sys, time, csv, pyaudio, wave, collections
 from sphinxbase import *
@@ -82,19 +84,19 @@ def checkFollowUp(sentence):
 	elif followup == True:
 		if questionSet[currentQuestion][3] == 'intro':
 			followup = False
-			returnQuestion("first")
+			returnQuestion(["first"])
 						
 		elif questionSet[currentQuestion][3] != 'intro':
 			followup = False
 
 	elif questionSet[currentQuestion][3] == 'intro':
-		returnQuestion("first")
+		returnQuestion(["first"])
 
-	elif questionCount == 6:
-		returnQuestion("second")
+	elif questionCount == 8:
+		returnQuestion(["second"])
 
-	elif questionCount == 12:
-		returnQuestion("third")
+	elif questionCount == 16:
+		returnQuestion(["third"])
 
 	else:
 		returnQuestion(tagList)
@@ -172,7 +174,7 @@ def searchWords(sentence):
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
-	filename = "/PATH/TO/audio files/" + str(number) + "_1.wav"
+	filename = "files/audio files/" + str(number) + "_1.wav"
 	f = wave.open(filename,"rb") 
 
 	#open pyaudio instance
@@ -315,7 +317,6 @@ def listen():
 	print final
 
 #selecting a question to return to participant
-#!!! REWRITE THIS to match tags in list rather than select a single tag !!!
 def returnQuestion(tagList):
 	selection = []
 	score = 0
@@ -334,13 +335,18 @@ def returnQuestion(tagList):
 					if q[i] == t:
 						# add to question score
 						questionScore += 1
+						print questionScore
 
-		if questionScore >= score:
+		if questionScore > score:
 			score = questionScore
 			chosenQuestion = q
+		elif questionScore == score:
+			selection.append(q)
+			# print selection
 
-	# rand = randrange(0, len(selection))
-	# chosen = selection[rand]
+	if len(selection) > 0:
+		rand = randrange(0, len(selection))
+		chosenQuestion = selection[rand]
 
 	for q in questionSet:
 		for d in doNotReuse:
@@ -408,4 +414,4 @@ with open('files/questions.csv', 'rb') as f:
 print "Questions loaded!"
 
 #introduction and first question, sets off the listening loop
-returnQuestion("intro")
+returnQuestion(["intro"])
