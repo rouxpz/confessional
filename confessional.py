@@ -69,7 +69,7 @@ def countWords(sentence):
 	print indices
 
 #checking if there's a follow up question present
-def checkFollowUp(sentence):
+def checkFollowUp(tagList):
 	print "Current Question: " + str(currentQuestion)
 	global followup
 	print "Follow up status pre-question: " + str(followup)
@@ -78,7 +78,10 @@ def checkFollowUp(sentence):
 		followup = True
 		print "there's a follow up here"
 		# print questionSet[currentQuestion][2]
-		speak(questionSet[currentQuestion][2])
+		try:
+			speak(questionSet[currentQuestion][2])
+		except IOError:
+			pass
 		listen()
 
 	elif followup == True:
@@ -97,6 +100,11 @@ def checkFollowUp(sentence):
 
 	elif questionCount == 16:
 		returnQuestion(["third"])
+
+	elif questionCount == 32:
+		s = 'say Goodbye'
+		system(s)
+		sys.exit(0)
 
 	else:
 		returnQuestion(tagList)
@@ -175,6 +183,7 @@ def searchWords(sentence):
 #computer speaking back to you if exit condition is not met
 def speak(number):
 	filename = "files/audio files/" + str(number) + "_1.wav"
+	# filename = "files/audio files/Hello6a.wav"
 	f = wave.open(filename,"rb") 
 
 	#open pyaudio instance
@@ -293,6 +302,9 @@ def listen():
 
 								else:
 									# words = final.split(' ')
+									stream.stop_stream()
+									stream.close()
+									p.terminate()
 									checkFollowUp(totalTags)
 									# print words
 									continue
@@ -300,6 +312,7 @@ def listen():
 		                    	print "BLANK"
 		                except AttributeError:
 		                    pass
+
 		                decoder.start_utt()
 		                print "Listening"
 		    else:
@@ -309,22 +322,22 @@ def listen():
 		except IOError as io:
 			print "Buffer overflowed, please try again"
 
-	stream.stop_stream()
-	stream.close()
-	p.terminate()
+	# stream.stop_stream()
+	# stream.close()
+	# p.terminate()
 
 	print "Program ended"
 	print final
 
 #selecting a question to return to participant
 def returnQuestion(tagList):
+	print tagList
 	selection = []
 	score = 0
 	chosenQuestion = ''
 	doNotReuse = ["first", "second", "third", "intro"]
 
 	for q in questionSet:
-
 		#initialize score of 0
 		questionScore = 0
 
@@ -335,14 +348,17 @@ def returnQuestion(tagList):
 					if q[i] == t:
 						# add to question score
 						questionScore += 1
-						print questionScore
-
-		if questionScore > score:
+						# print questionScore
+		if score > 0:
+			if questionScore > score:
+				score = questionScore
+				chosenQuestion = q
+			elif questionScore == score:
+				selection.append(q)
+				print selection
+		else:
 			score = questionScore
 			chosenQuestion = q
-		elif questionScore == score:
-			selection.append(q)
-			# print selection
 
 	if len(selection) > 0:
 		rand = randrange(0, len(selection))
@@ -355,7 +371,7 @@ def returnQuestion(tagList):
 					pass
 				else:
 					q.append("used")
-					print q
+					# print q
 	
 	# modify current question to eventually see if there's a tied in follow up
 	global currentQuestion
@@ -371,11 +387,20 @@ def returnQuestion(tagList):
 	lastSavedTime = time.time()
 
 	#clear tags from previous response
+	global totalTags
 	totalTags = []
 
 	#ask highest scoring question
+	print chosenQuestion
 	print chosenQuestion[0]
-	speak(chosenQuestion[1])
+
+	try:
+		speak(chosenQuestion[1])
+	except IOError:
+		pass
+
+	selection = []
+	print selection
 
 	#call listen() again to keep the program going until exit
 	listen()
