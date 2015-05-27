@@ -17,7 +17,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
 
-#establish pocketsphinx configuration
+# establish pocketsphinx configuration
 config = Decoder.default_config()
 config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
@@ -70,115 +70,105 @@ def countWords(sentence):
 
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
-	print "Current Question: " + str(currentQuestion)
+	# print "Current Question: " + str(currentQuestion)
 	global followup
-	print "Follow up status pre-question: " + str(followup)
+	# print "Follow up status pre-question: " + str(followup)
 
 	if questionSet[currentQuestion][2] != '' and followup == False:
 		followup = True
 		print "there's a follow up here"
-		# print questionSet[currentQuestion][2]
-		try:
-			speak(questionSet[currentQuestion][2])
-		except IOError:
-			pass
-		listen()
+
+		if questionSet[currentQuestion][2] == 'hard':
+			print questionSet[currentQuestion][3]
+			try:
+				speak(questionSet[currentQuestion][3])
+			except IOError:
+				pass
+			listen()
+
+		elif questionSet[currentQuestion][2] == 'yesno':
+			print questionSet[currentQuestion][3]
+			try:
+				speak(questionSet[currentQuestion][3])
+			except IOError:
+				pass
+			listen()
+
+		elif questionSet[currentQuestion][2] == 'short' and 'short' in tagList:
+			print questionSet[currentQuestion][3]
+			try:
+				speak(questionSet[currentQuestion][3])
+			except IOError:
+				pass
+			listen()
+
+		else:
+			followup = False
+			returnQuestion(tagList)
 
 	elif followup == True:
-		if questionSet[currentQuestion][3] == 'intro':
+		if questionSet[currentQuestion][5] == 'intro':
 			followup = False
-			returnQuestion(["first"])
-						
+			returnQuestion(['first'])
 		elif questionSet[currentQuestion][3] != 'intro':
 			followup = False
 
-	elif questionSet[currentQuestion][3] == 'intro':
-		returnQuestion(["first"])
-
-	elif questionCount == 8:
-		returnQuestion(["second"])
-
-	elif questionCount == 16:
-		returnQuestion(["third"])
-
-	elif questionCount == 32:
-		s = 'say Goodbye'
-		system(s)
-		sys.exit(0)
+	elif questionSet[currentQuestion][5] == 'intro':
+		returnQuestion(['first'])
 
 	else:
 		returnQuestion(tagList)
 
 #searching input phrase with regular expressions & emotional lexicon
 def searchWords(sentence):
-	tag = ''
+	tags = []
 	split = sentence.split(" ")
-	if len(split) > 10:
-		usedTerms = []
-		numbers = []
-		emotionsUsed = []
+	usedTerms = []
+	numbers = []
+	emotionsUsed = []
 
-		for term in terms:
-			number = 0
-			search = re.findall(term, sentence)
+	for term in terms:
+		number = 0
+		search = re.findall(term, sentence)
 
-			if len(search) > 0: #if a term was found
-				
-				number = len(search)
-				usedTerms.append(term)
-				numbers.append(number)
-		
-		for emotion in emotions:
-			er = r"\s" + emotion[0] + r"\s"
-			emotion_match = re.search(er, sentence)
-			if emotion_match != None:
-				if len(emotion) < 10:
-					for i in range(1, len(emotion)):
-						print emotion[0] + ", " + emotion[i]
-						emotionsUsed.append(emotion[i])
+		if len(search) > 0: #if a term was found	
+			tags.append(term)
+	
+	for emotion in emotions:
+		er = r"\s" + emotion[0] + r"\s"
+		emotion_match = re.search(er, sentence)
+		if emotion_match != None:
+			if len(emotion) < 10:
+				for i in range(1, len(emotion)):
+					print emotion[0] + ", " + emotion[i]
+					emotionsUsed.append(emotion[i])
 
-		# print emotionsUsed
-		counter = collections.Counter(emotionsUsed)
-		print counter
-		if counter:
-			ordered = counter.most_common()
-			print ordered
-			max_emotion, max_value = ordered[0]
+	# print emotionsUsed
+	counter = collections.Counter(emotionsUsed)
+	print counter
+	if counter:
+		ordered = counter.most_common()
+		print ordered
+		max_emotion, max_value = ordered[0]
 
-			if len(ordered) > 1:
-				second_emotion, second_value = ordered[1]
-				# print max_emotion + ", " + second_emotion
-				if max_value > second_value:
-					# returnQuestion(max_emotion)
-					tag = max_emotion
-				else:
-					print "elaboration necessary"
-					# returnQuestion("elaboration")
-					tag = 'elaboration'
-			else:
+		if len(ordered) > 1:
+			second_emotion, second_value = ordered[1]
+			# print max_emotion + ", " + second_emotion
+			if max_value > second_value:
 				# returnQuestion(max_emotion)
 				tag = max_emotion
-
+			else:
+				print "elaboration necessary"
+				tags.append('elaboration')
 		else:
-			print "elaboration necessary"
-			# returnQuestion("elaboration")
-			tag = 'elaboration'
+			tags.append(max_emotion)
 
-		# print usedTerms
-		if len(numbers) > 1:
-			max_term = max(numbers)
-			index = numbers.index(max_term)
-			print usedTerms[index]
-
-		# returnQuestion(usedTerms[index])
-
-	else:
-		# returnQuestion("elaboration")
-		tag = 'elaboration'
+	if len(tags) == 0:
+		tags.append('elaboration')
 		print ("elaboration necessary")
 
-	print "tag: " + tag
-	return tag
+	print tags
+	return tags
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
@@ -190,17 +180,17 @@ def speak(number):
 	pa = pyaudio.PyAudio()
 
 	stream = pa.open(format = pa.get_format_from_width(f.getsampwidth()),  
-	                channels = f.getnchannels(),  
-	                rate = f.getframerate(),  
-	                output = True)
+					channels = f.getnchannels(),  
+					rate = f.getframerate(),  
+					output = True)
 
 	#read data  
 	data = f.readframes(CHUNK)
 
 	#play stream  
 	while data != '':  
-	    stream.write(data)  
-	    data = f.readframes(CHUNK)
+		stream.write(data)  
+		data = f.readframes(CHUNK)
 
 	#stop stream  
 	stream.stop_stream()  
@@ -211,131 +201,130 @@ def speak(number):
 
 #computer listening to what you say
 def listen():
+	totalTags = []
+	print totalTags
+
+	text = ''
+
 	p = pyaudio.PyAudio()
+	totalTime = 0;
 	 
 	stream = p.open(format=FORMAT,
-	            channels=CHANNELS,
-	            rate=RATE,
-	            input=True,
-	            input_device_index=0,
-	            frames_per_buffer=CHUNK)
+				channels=CHANNELS,
+				rate=RATE,
+				input=True,
+				input_device_index=1,
+				frames_per_buffer=CHUNK)
 
-	# stream.start_stream()
-	in_speech_bf = True
+	stream.start_stream()
+	# in_speech_bf = True
 	decoder.start_utt()
 
 	global lastSavedTime, text
 	lastSavedTime = time.time()
 	tag = ''
 	savedText = ''
+	paused = ''
+	silence = 0
 	print "Listening"
 
 	while True:
 
 		try:
-		    buf = stream.read(CHUNK)
-		    # print buf
+			buf = stream.read(CHUNK)
+			# print buf
+			if buf:
+				decoder.process_raw(buf, False, False)
+				try:
+					if  decoder.hyp().hypstr != '':
+						text = str(decoder.hyp().hypstr).lower()
+						print "Elapsed time: " + str(time.time() - lastSavedTime)
+						# print text
 
-		    if buf:
-		        decoder.process_raw(buf, False, False)
-		        try:
-		            if  decoder.hyp().hypstr != '':
-		                text = str(decoder.hyp().hypstr).lower()
-		                # print 'Partial decoding result: ' + str(decoder.hyp().hypstr).lower()
-		                # print text
-		                print "Elapsed time: " + str(time.time() - lastSavedTime)
+						#process input text after every 10 seconds
+						if time.time() - lastSavedTime >= 10:
+							totalTime += time.time() - lastSavedTime
+							# print "total time: " + str(totalTime)
 
-		                #process input text after every 10 seconds
-		                if time.time() - lastSavedTime >= 10:
+							#only process newest chunk of text, rather than whole thing
+							toSplit = re.compile('%s(.*)'%savedText)
+							m = toSplit.search(text)
+							textChunk = m.group(1)
+							print "text at 10 second chunk: " + textChunk
 
-		                	#only process newest chunk of text, rather than whole thing
-		                	toSplit = re.compile('%s(.*)'%savedText)
-		                	m = toSplit.search(text)
-		                	textChunk = m.group(1)
-		                	print "text at 10 second chunk: " + textChunk
+							#select tags for text chunk, and add them to the list of tags for this response
+							newTags = searchWords(textChunk)
+							for t in newTags:
+								if t not in totalTags:
+									totalTags.append(t)
 
-		                	#select tag for text chunk, and add it to the list of tags for this response
-		                	tag = searchWords(textChunk)
-		                	totalTags.append(tag)
+							#reset saved text and time
+							savedText = text
+							print "saved text " + savedText
+							lastSavedTime = time.time()
 
-		                	#reset saved text and time
-		                	savedText = ''
-		                	lastSavedTime = time.time()
-		            else:
-		            	print "BLANK"
+						if paused == text:
+							print paused
+							silence += 1
+						else:
+							silence = 0
 
-		        except AttributeError:
-		            pass
+						paused = text
 
-		        if decoder.get_in_speech():
-		            # sys.stdout.write('.')
-		            sys.stdout.flush()
-		        if decoder.get_in_speech() != in_speech_bf:
-		            in_speech_bf = decoder.get_in_speech()
-		            if not in_speech_bf:
-		                decoder.end_utt()
-		                if text != '':
+					else:
+						print "BLANK"
 
-		                	#search and tag the last chunk of text
-		                	toSplit = re.compile('%s(.*)'%savedText)
-		                	m = toSplit.search(text)
-		                	textChunk = m.group(1)
-			                tag = searchWords(textChunk)
-			                totalTags.append(tag)
+				except AttributeError:
+					pass
 
-			            	print "final text: " + text
-		                print "Elapsed time: " + str(time.time() - lastSavedTime)
-		                lastSavedTime = time.time()
-		                print "Finishing, one moment..."
-		                print totalTags
-		                try:
-		                    if  decoder.hyp().hypstr != '':
-								final = str(decoder.hyp().hypstr).lower()
-								print'Stream decoding result: ' + final
-
-								exitCondition = re.findall("good-bye", final)
-
-								if len(exitCondition) > 0:
-									s = 'say Goodbye'
-									system(s)
-									sys.exit(0)
-
-								else:
-									# words = final.split(' ')
-									stream.stop_stream()
-									stream.close()
-									p.terminate()
-									checkFollowUp(totalTags)
-									# print words
-									continue
-		                    else:
-		                    	print "BLANK"
-		                except AttributeError:
-		                    pass
-
-		                decoder.start_utt()
-		                print "Listening"
-		    else:
-		        break
+				if silence > 30:
+					decoder.end_utt()
+					break
 
 		# this is to account for buffer overflows
 		except IOError as io:
 			print "Buffer overflowed, please try again"
 
-	# stream.stop_stream()
-	# stream.close()
-	# p.terminate()
+	stream.stop_stream()
+	stream.close()
+	p.terminate()
 
-	print "Program ended"
-	print final
+	if text != '':
+
+		# print "Elapsed time: " + str(time.time() - lastSavedTime)
+		totalTime += time.time() - lastSavedTime
+		print "total time: " + str(totalTime)
+
+		if totalTime < 20:
+			totalTags.append('short')
+
+		#search and tag the last chunk of text
+		toSplit = re.compile('%s(.*)'%savedText)
+		m = toSplit.search(text)
+		if m != None:
+			textChunk = m.group(1)
+			newTags = searchWords(textChunk)
+		else:
+			newTags = searchWords(text)
+			
+		for t in newTags:
+			if t not in totalTags:
+				totalTags.append(t)
+
+		print "final text: " + text
+
+	print totalTags
+
+	print "checking follow up"
+	checkFollowUp(totalTags)
 
 #selecting a question to return to participant
 def returnQuestion(tagList):
+	print "returning a question!"
 	print tagList
 	selection = []
 	score = 0
 	chosenQuestion = ''
-	doNotReuse = ["first", "second", "third", "intro"]
 
 	for q in questionSet:
 		#initialize score of 0
@@ -348,14 +337,13 @@ def returnQuestion(tagList):
 					if q[i] == t:
 						# add to question score
 						questionScore += 1
-						# print questionScore
+						print q[0] + ", " + str(questionScore)
 		if score > 0:
 			if questionScore > score:
 				score = questionScore
 				chosenQuestion = q
 			elif questionScore == score:
 				selection.append(q)
-				print selection
 		else:
 			score = questionScore
 			chosenQuestion = q
@@ -365,13 +353,9 @@ def returnQuestion(tagList):
 		chosenQuestion = selection[rand]
 
 	for q in questionSet:
-		for d in doNotReuse:
-			if chosenQuestion[1] == q[1]:
-				if q[-1] != d:
-					pass
-				else:
-					q.append("used")
-					# print q
+		if chosenQuestion[1] == q[1]:
+			print q[1] + " has been used"
+			q.append("used")
 	
 	# modify current question to eventually see if there's a tied in follow up
 	global currentQuestion
@@ -386,12 +370,8 @@ def returnQuestion(tagList):
 	print "Elapsed time: " + str(time.time() - lastSavedTime)
 	lastSavedTime = time.time()
 
-	#clear tags from previous response
-	global totalTags
-	totalTags = []
-
 	#ask highest scoring question
-	print chosenQuestion
+	# print chosenQuestion
 	print chosenQuestion[0]
 
 	try:
@@ -400,7 +380,7 @@ def returnQuestion(tagList):
 		pass
 
 	selection = []
-	print selection
+	# print selection
 
 	#call listen() again to keep the program going until exit
 	listen()
@@ -426,8 +406,8 @@ with open('files/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.csv', 'rb') as
 print "Emotions loaded!"
 
 #load questions
-with open('files/questions.csv', 'rb') as f:
-	reader = csv.reader(f, delimiter=";")
+with open('files/questions.csv', 'rU') as f:
+	reader = csv.reader(f, delimiter=",")
 	for row in reader:
 		# print len(row)
 		toAdd = []
