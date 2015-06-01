@@ -41,6 +41,7 @@ totalTags = []
 
 #terms to select question
 terms = ["tech", "fame", "money", "wish", "accomplish", "past", "future", "secret", "death", "identity", "lifestyle", "career", "world", "change", "passion", "opinion", "fear", "anger", "happy", "sad", "regret", "love", "sex", "family", "friends", "ethics", "meta", "elaboration"]
+termCatalog = []
 
 #empty list to store emotional content
 emotions = []
@@ -123,17 +124,16 @@ def checkFollowUp(tagList):
 def searchWords(sentence):
 	tags = []
 	split = sentence.split(" ")
-	usedTerms = []
 	numbers = []
 	emotionsUsed = []
 
-	for term in terms:
-		number = 0
-		search = re.findall(term, sentence)
+	#collect tags from text analysis
+	localTags = assignTerms(sentence)
 
-		if len(search) > 0: #if a term was found	
-			tags.append(term)
+	for l in localTags:
+		tags.append(l)
 	
+	#collect emotion tags
 	for emotion in emotions:
 		er = r"\s" + emotion[0] + r"\s"
 		emotion_match = re.search(er, sentence)
@@ -318,6 +318,15 @@ def listen():
 	print "checking follow up"
 	checkFollowUp(totalTags)
 
+def assignTerms(sentence):
+	localTags = []
+	words = sentence.split(" ")
+	for w in words:
+		for t in termCatalog:
+			if w == t[0]:
+				localTags.append(t[1])
+	return localTags
+
 #selecting a question to return to participant
 def returnQuestion(tagList):
 	print "returning a question!"
@@ -404,6 +413,18 @@ with open('files/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.csv', 'rb') as
 						emotions.append([row[0], row[1]])
 
 print "Emotions loaded!"
+
+#load term files
+for term in terms:
+	filename = term + ".txt"
+	# print filename
+	with open('files/' + filename, 'rb') as f:
+		lines = f.read().splitlines()
+		for line in lines:
+			termCatalog.append([line, term])
+
+# print termCatalog
+print "Terms sorted!"
 
 #load questions
 with open('files/questions.csv', 'rU') as f:
