@@ -1,0 +1,8 @@
+job
+work
+pay
+paid
+working
+office
+boss
+manager

@@ -5,6 +5,7 @@ import re, sys, time, csv, pyaudio, wave, collections
 from sphinxbase import *
 from pocketsphinx import *
 from random import randrange
+from pattern.en import tenses
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -22,7 +23,7 @@ config = Decoder.default_config()
 config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
-config.set_float('-vad_threshold', 4.0)
+config.set_float('-vad_threshold', 3.0)
 config.set_int('-vad_postspeech', 100)
 
 decoder = Decoder(config)
@@ -40,7 +41,7 @@ text = ''
 totalTags = []
 
 #terms to select question
-terms = ["tech", "fame", "money", "wish", "accomplish", "past", "future", "secret", "death", "identity", "lifestyle", "career", "world", "change", "passion", "opinion", "fear", "anger", "happy", "sad", "regret", "love", "sex", "family", "friends", "ethics", "meta", "elaboration"]
+terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
 termCatalog = []
 
 #empty list to store emotional content
@@ -71,6 +72,15 @@ def countWords(sentence):
 
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
+
+	counter = collections.Counter(tagList)
+	if counter:
+		ordered = counter.most_common()
+		tagList = []
+
+		for word, count in ordered:
+			tagList.append(word)
+
 	# print "Current Question: " + str(currentQuestion)
 	global followup
 	# print "Follow up status pre-question: " + str(followup)
@@ -110,12 +120,17 @@ def checkFollowUp(tagList):
 	elif followup == True:
 		if questionSet[currentQuestion][5] == 'intro':
 			followup = False
-			returnQuestion(['first'])
+			returnQuestion(['warmup'])
 		elif questionSet[currentQuestion][3] != 'intro':
 			followup = False
+			returnQuestion(tagList)
 
 	elif questionSet[currentQuestion][5] == 'intro':
-		returnQuestion(['first'])
+		returnQuestion(['warmup'])
+
+	elif elapsedTime > 1800:
+		speak("bye")
+		waitingPeriod()
 
 	else:
 		returnQuestion(tagList)
@@ -127,11 +142,14 @@ def searchWords(sentence):
 	numbers = []
 	emotionsUsed = []
 
-	#collect tags from text analysis
-	localTags = assignTerms(sentence)
+	for s in split:
+		print tenses(s)
 
-	for l in localTags:
-		tags.append(l)
+	# collect tags from text analysis
+	localTags = assignTerms(sentence)
+	print localTags
+
+	assignTerms(sentence)
 	
 	#collect emotion tags
 	for emotion in emotions:
@@ -213,7 +231,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=1,
+				input_device_index=0,
 				frames_per_buffer=CHUNK)
 
 	stream.start_stream()
@@ -255,8 +273,8 @@ def listen():
 							#select tags for text chunk, and add them to the list of tags for this response
 							newTags = searchWords(textChunk)
 							for t in newTags:
-								if t not in totalTags:
-									totalTags.append(t)
+								# if t not in totalTags:
+								totalTags.append(t)
 
 							#reset saved text and time
 							savedText = text
@@ -308,10 +326,13 @@ def listen():
 			newTags = searchWords(text)
 			
 		for t in newTags:
-			if t not in totalTags:
-				totalTags.append(t)
+			# if t not in totalTags:
+			totalTags.append(t)
 
 		print "final text: " + text
+		with open("transcript.txt", "a") as toSave:
+			toSave.write(text)
+			toSave.write('\n')
 
 	print totalTags
 
@@ -321,11 +342,14 @@ def listen():
 def assignTerms(sentence):
 	localTags = []
 	words = sentence.split(" ")
+	print words
 	for w in words:
 		for t in termCatalog:
 			if w == t[0]:
+				# print t
 				localTags.append(t[1])
 	return localTags
+	# print localTags
 
 #selecting a question to return to participant
 def returnQuestion(tagList):
@@ -342,11 +366,19 @@ def returnQuestion(tagList):
 		#go through tags in tag list to find matches
 		for t in tagList:
 			if q[len(q) - 1] != "used":
-				for i in range(3, len(q)):
-					if q[i] == t:
-						# add to question score
-						questionScore += 1
-						print q[0] + ", " + str(questionScore)
+
+				#only looking for questions that match the most heavily used tag
+				if q[3] == t and len(q) >= 5:
+					for i in range(4, len(q)):
+						if q[i] == t:
+							# add to question score
+							questionScore += 1
+							print q[0] + ", " + str(questionScore)
+				elif q[3] == t and len(q) < 5:
+					questionScore = 1
+				else:
+					pass
+
 		if score > 0:
 			if questionScore > score:
 				score = questionScore
@@ -389,10 +421,30 @@ def returnQuestion(tagList):
 		pass
 
 	selection = []
+	global elapsedTime
+	elapsedTime = time.time() - startingTime
+	print "Time since beginning of program: " + str(elapsedTime) + " seconds"
 	# print selection
 
 	#call listen() again to keep the program going until exit
 	listen()
+
+def waitingPeriod():
+	global startingTime
+
+	start = int(raw_input('>'))
+
+	if start == 0:
+		startingTime = time.time()
+		print "Program starting"
+		returnQuestion(['intro'])
+	else:
+		print "Sorry, wrong key"
+
+		waitingPeriod()
+
+def goodbye():
+	returnQuestion
 
 
 ##### MAIN SCRIPT #####
@@ -428,7 +480,7 @@ print "Terms sorted!"
 
 #load questions
 with open('files/questions.csv', 'rU') as f:
-	reader = csv.reader(f, delimiter=",")
+	reader = csv.reader(f, delimiter=";")
 	for row in reader:
 		# print len(row)
 		toAdd = []
@@ -440,4 +492,5 @@ with open('files/questions.csv', 'rU') as f:
 print "Questions loaded!"
 
 #introduction and first question, sets off the listening loop
-returnQuestion(["intro"])
+# returnQuestion(["intro"])
+waitingPeriod()
