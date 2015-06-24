@@ -96,8 +96,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			typeResponse()
-			# listen()
+			# typeResponse()
+			listen()
 
 		elif questionSet[currentQuestion][2] == 'yesno':
 			print questionSet[currentQuestion][3]
@@ -105,8 +105,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			typeResponse()
-			# listen()
+			# typeResponse()
+			listen()
 
 		elif questionSet[currentQuestion][2] == 'short' and 'short' in tagList:
 			print questionSet[currentQuestion][3]
@@ -114,8 +114,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			typeResponse()
-			# listen()
+			# typeResponse()
+			listen()
 
 		else:
 			followup = False
@@ -335,7 +335,7 @@ def listen():
 		# this is to account for buffer overflows
 		except IOError as io:
 			print io
-			print "Buffer overflowed, please try again"
+			buf = '\x00'*16*256*1
 
 	stream.stop_stream()
 	stream.close()
@@ -466,8 +466,8 @@ def returnQuestion(tagList):
 	# print selection
 
 	#call listen() again to keep the program going until exit
-	typeResponse()
-	# listen()
+	# typeResponse()
+	listen()
 
 def waitingPeriod():
 	global startingTime
