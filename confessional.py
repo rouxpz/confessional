@@ -398,22 +398,25 @@ def returnQuestion(tagList):
 		questionScore = 0
 
 		#go through tags in tag list to find matches
-		for t in tagList:
-			if q[len(q) - 1] != "used":
-				#only looking for questions that match the most heavily used tag
-				if q[5] == t and len(q) > 6:
-					print q[0]
+		if q[len(q) - 1] != "used":
+			
+			#only looking for questions that match the most heavily used tag
+			for i in range(5, len(q)):
+				if q[i] == tagList[0] and len(q) > 6:
 					questionScore = 1
-					for i in range(6, len(q)):
-						if q[i] == t:
+					print q[0] + ", score: " + str(questionScore)
+
+					for j in range(1, len(tagList)):
+						if q[i] == tagList[j]:
 							# add to question score
 							questionScore += 1
-							print q[0] + ", " + str(questionScore)
-				elif q[5] == t and len(q) <= 6:
-					print "Question that fits: "
-					print q[0]
+							print q[0] + ", score: " + str(questionScore)
+
+				elif q[i] == tagList[0] and len(q) <= 6:
+					# print "Question that fits: "
 					questionScore = 1
-					print "Question score: " + str(questionScore)
+					print q[0] + ", score: " + str(questionScore)
+
 				else:
 					continue
 
@@ -435,7 +438,8 @@ def returnQuestion(tagList):
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:
 			print q[1] + " has been used"
-			# q.append("used")
+			q.append("used")
+			print q
 	
 	# modify current question to eventually see if there's a tied in follow up
 	global currentQuestion
