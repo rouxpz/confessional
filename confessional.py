@@ -23,7 +23,7 @@ config = Decoder.default_config()
 config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
-config.set_float('-vad_threshold', 3.0)
+config.set_float('-vad_threshold',1.0)
 config.set_int('-vad_postspeech', 100)
 
 decoder = Decoder(config)
@@ -37,6 +37,7 @@ questionCount = 0
 followup = False
 lastSavedTime = time.time()
 text = ''
+savedFile = ''
 
 totalTags = []
 
@@ -95,7 +96,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			listen()
+			typeResponse()
+			# listen()
 
 		elif questionSet[currentQuestion][2] == 'yesno':
 			print questionSet[currentQuestion][3]
@@ -103,7 +105,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			listen()
+			typeResponse()
+			# listen()
 
 		elif questionSet[currentQuestion][2] == 'short' and 'short' in tagList:
 			print questionSet[currentQuestion][3]
@@ -111,7 +114,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			listen()
+			typeResponse()
+			# listen()
 
 		else:
 			followup = False
@@ -129,8 +133,7 @@ def checkFollowUp(tagList):
 		returnQuestion(['warmup'])
 
 	elif elapsedTime > 1800:
-		speak("bye")
-		waitingPeriod()
+		goodbye()
 
 	else:
 		returnQuestion(tagList)
@@ -148,8 +151,8 @@ def searchWords(sentence):
 	# collect tags from text analysis
 	localTags = assignTerms(sentence)
 	print localTags
-
-	assignTerms(sentence)
+	for t in localTags:
+		tags.append(t)
 	
 	#collect emotion tags
 	for emotion in emotions:
@@ -217,6 +220,36 @@ def speak(number):
 	#close pyaudio instance
 	pa.terminate()
 
+
+#computer listening to what you say, keyboard entry for testing
+def typeResponse():
+	totalTags = []
+
+	say = raw_input("Text entry here: ")
+
+	#begin text processing
+	say = say.lower() #convert everything to lowercase to avoid duplicates
+
+	exitCondition = re.findall("goodbye", say)
+
+	if len(exitCondition) > 0:
+		s = 'say Goodbye'
+		system(s)
+		sys.exit(0)
+	# countWords(say)
+	else:
+		split = say.split(" ")
+		if len(split) < 5:
+			totalTags.append('short')
+
+		newTags = searchWords(say)
+		for t in newTags:
+			totalTags.append(t)
+
+		print totalTags
+
+		checkFollowUp(totalTags)
+
 #computer listening to what you say
 def listen():
 	totalTags = []
@@ -231,8 +264,8 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=0,
-				frames_per_buffer=CHUNK)
+				input_device_index=1,
+				frames_per_buffer=2048)
 
 	stream.start_stream()
 	# in_speech_bf = True
@@ -256,7 +289,7 @@ def listen():
 				try:
 					if  decoder.hyp().hypstr != '':
 						text = str(decoder.hyp().hypstr).lower()
-						print "Elapsed time: " + str(time.time() - lastSavedTime)
+						# print "Elapsed time: " + str(time.time() - lastSavedTime)
 						# print text
 
 						#process input text after every 10 seconds
@@ -301,6 +334,7 @@ def listen():
 
 		# this is to account for buffer overflows
 		except IOError as io:
+			print io
 			print "Buffer overflowed, please try again"
 
 	stream.stop_stream()
@@ -313,7 +347,7 @@ def listen():
 		totalTime += time.time() - lastSavedTime
 		print "total time: " + str(totalTime)
 
-		if totalTime < 20:
+		if totalTime < 10:
 			totalTags.append('short')
 
 		#search and tag the last chunk of text
@@ -330,7 +364,7 @@ def listen():
 			totalTags.append(t)
 
 		print "final text: " + text
-		with open("transcript.txt", "a") as toSave:
+		with open(savedFile, "a") as toSave:
 			toSave.write(text)
 			toSave.write('\n')
 
@@ -366,37 +400,42 @@ def returnQuestion(tagList):
 		#go through tags in tag list to find matches
 		for t in tagList:
 			if q[len(q) - 1] != "used":
-
 				#only looking for questions that match the most heavily used tag
-				if q[3] == t and len(q) >= 5:
-					for i in range(4, len(q)):
+				if q[5] == t and len(q) > 6:
+					print q[0]
+					questionScore = 1
+					for i in range(6, len(q)):
 						if q[i] == t:
 							# add to question score
 							questionScore += 1
 							print q[0] + ", " + str(questionScore)
-				elif q[3] == t and len(q) < 5:
+				elif q[5] == t and len(q) <= 6:
+					print "Question that fits: "
+					print q[0]
 					questionScore = 1
+					print "Question score: " + str(questionScore)
 				else:
-					pass
+					continue
 
-		if score > 0:
+		if questionScore > 0:
 			if questionScore > score:
+				selection = []
+				selection.append(q)
 				score = questionScore
-				chosenQuestion = q
 			elif questionScore == score:
 				selection.append(q)
-		else:
-			score = questionScore
-			chosenQuestion = q
 
+	# print selection
 	if len(selection) > 0:
 		rand = randrange(0, len(selection))
+		print "index chosen: " + str(rand)
 		chosenQuestion = selection[rand]
+		# print chosenQuestion
 
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:
 			print q[1] + " has been used"
-			q.append("used")
+			# q.append("used")
 	
 	# modify current question to eventually see if there's a tied in follow up
 	global currentQuestion
@@ -427,15 +466,18 @@ def returnQuestion(tagList):
 	# print selection
 
 	#call listen() again to keep the program going until exit
-	listen()
+	typeResponse()
+	# listen()
 
 def waitingPeriod():
 	global startingTime
+	global savedFile
 
 	start = int(raw_input('>'))
 
 	if start == 0:
 		startingTime = time.time()
+		savedFile = "transcript" + str(startingTime) + ".txt"
 		print "Program starting"
 		returnQuestion(['intro'])
 	else:
@@ -444,7 +486,14 @@ def waitingPeriod():
 		waitingPeriod()
 
 def goodbye():
-	returnQuestion
+	speak("bye")
+
+	for q in questionSet:
+		for i in range(0, len(q)):
+			if q[i] == "used":
+				q.remove(q[i])
+
+	waitingPeriod()
 
 
 ##### MAIN SCRIPT #####
@@ -491,6 +540,5 @@ with open('files/questions.csv', 'rU') as f:
 
 print "Questions loaded!"
 
-#introduction and first question, sets off the listening loop
-# returnQuestion(["intro"])
+#starts program by waiting for indication that we're ready to go
 waitingPeriod()

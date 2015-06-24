@@ -4,3 +4,4 @@ files/cmusphinx-en-us-5.2
 files/en-70k-0.1.lm
 files/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.csv
 files/audio files/
+*.txt
