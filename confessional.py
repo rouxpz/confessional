@@ -311,7 +311,7 @@ def listen():
 
 							#reset saved text and time
 							savedText = text
-							print "saved text " + savedText
+							print "saved text: " + savedText
 							lastSavedTime = time.time()
 
 						if paused == text:
@@ -365,7 +365,7 @@ def listen():
 
 		print "final text: " + text
 		with open(savedFile, "a") as toSave:
-			toSave.write(text)
+			toSave.write('Response: ' + text)
 			toSave.write('\n')
 
 	print totalTags
@@ -399,7 +399,7 @@ def returnQuestion(tagList):
 
 		#go through tags in tag list to find matches
 		if q[len(q) - 1] != "used":
-			
+			print q
 			#only looking for questions that match the most heavily used tag
 			for i in range(5, len(q)):
 				if q[i] == tagList[0] and len(q) > 6:
@@ -418,7 +418,7 @@ def returnQuestion(tagList):
 					print q[0] + ", score: " + str(questionScore)
 
 				else:
-					continue
+					pass
 
 		if questionScore > 0:
 			if questionScore > score:
@@ -457,6 +457,11 @@ def returnQuestion(tagList):
 	#ask highest scoring question
 	# print chosenQuestion
 	print chosenQuestion[0]
+
+	with open(savedFile, "a") as toSave:
+		toSave.write('\n\n')
+		toSave.write('Tags found: ' + str(tagList) + '\n')
+		toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
 
 	try:
 		speak(chosenQuestion[1])
