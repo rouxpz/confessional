@@ -28,6 +28,7 @@ config.set_int('-vad_postspeech', 100)
 
 decoder = Decoder(config)
 
+#initialize e'rrythang
 counted = []
 indices = []
 
@@ -39,6 +40,7 @@ lastSavedTime = time.time()
 text = ''
 savedFile = ''
 
+#global list to hold the total tags for each response
 totalTags = []
 
 #terms to select question
@@ -48,7 +50,7 @@ termCatalog = []
 #empty list to store emotional content
 emotions = []
 
-#simple word count
+#simple word count -- not being used right now
 def countWords(sentence):
 	words = sentence.split(" ")
 	for w in words:
@@ -74,22 +76,24 @@ def countWords(sentence):
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
 
+	#sorts tag list into order based on which tags were used the most
 	counter = collections.Counter(tagList)
 	if counter:
 		ordered = counter.most_common()
 		tagList = []
 
+		#rebuild tag list based on sorted version
 		for word, count in ordered:
 			tagList.append(word)
 
-	# print "Current Question: " + str(currentQuestion)
 	global followup
-	# print "Follow up status pre-question: " + str(followup)
 
+	#checking for follow up questions and follow up types based on database -- need to work out more detailed sorting here
 	if questionSet[currentQuestion][2] != '' and followup == False:
 		followup = True
 		print "there's a follow up here"
 
+		#process for hard follow up questions
 		if questionSet[currentQuestion][2] == 'hard':
 			print questionSet[currentQuestion][3]
 			try:
@@ -99,6 +103,7 @@ def checkFollowUp(tagList):
 			# typeResponse()
 			listen()
 
+		#process for yes/no answers; should branch in two directions
 		elif questionSet[currentQuestion][2] == 'yesno':
 			print questionSet[currentQuestion][3]
 			try:
@@ -108,6 +113,7 @@ def checkFollowUp(tagList):
 			# typeResponse()
 			listen()
 
+		#process for short answers; follow up only returned if the response has "short" in the tag list
 		elif questionSet[currentQuestion][2] == 'short' and 'short' in tagList:
 			print questionSet[currentQuestion][3]
 			try:
@@ -117,11 +123,14 @@ def checkFollowUp(tagList):
 			# typeResponse()
 			listen()
 
+		#if there's no follow up, return a question the normal way
 		else:
 			followup = False
 			returnQuestion(tagList)
 
+	#if we are currently on a follow up question:
 	elif followup == True:
+		#are we currently on an intro question?
 		if questionSet[currentQuestion][5] == 'intro':
 			followup = False
 			returnQuestion(['warmup'])
@@ -129,12 +138,15 @@ def checkFollowUp(tagList):
 			followup = False
 			returnQuestion(tagList)
 
+	#intro question with no follow up
 	elif questionSet[currentQuestion][5] == 'intro':
 		returnQuestion(['warmup'])
 
+	#exit automatically after 30 minutes have passed
 	elif elapsedTime > 1800:
 		goodbye()
 
+	#if no conditions have been met after all of that, return a question the normal way
 	else:
 		returnQuestion(tagList)
 
@@ -148,7 +160,7 @@ def searchWords(sentence):
 	for s in split:
 		print tenses(s)
 
-	# collect tags from text analysis
+	# collect thematic tags from text analysis
 	localTags = assignTerms(sentence)
 	print localTags
 	for t in localTags:
@@ -164,7 +176,7 @@ def searchWords(sentence):
 					print emotion[0] + ", " + emotion[i]
 					emotionsUsed.append(emotion[i])
 
-	# print emotionsUsed
+	#which emotion is used most; need to change this to weight more accurately, right now if two emotions are equal an elaboration is returned
 	counter = collections.Counter(emotionsUsed)
 	print counter
 	if counter:
@@ -221,7 +233,7 @@ def speak(number):
 	pa.terminate()
 
 
-#computer listening to what you say, keyboard entry for testing
+#computer listening to what you say -- keyboard entry version for testing
 def typeResponse():
 	totalTags = []
 
@@ -236,7 +248,7 @@ def typeResponse():
 		s = 'say Goodbye'
 		system(s)
 		sys.exit(0)
-	# countWords(say)
+
 	else:
 		split = say.split(" ")
 		if len(split) < 5:
@@ -259,7 +271,8 @@ def listen():
 
 	p = pyaudio.PyAudio()
 	totalTime = 0;
-	 
+	
+	#open pyaudio stream
 	stream = p.open(format=FORMAT,
 				channels=CHANNELS,
 				rate=RATE,
@@ -271,12 +284,15 @@ def listen():
 	# in_speech_bf = True
 	decoder.start_utt()
 
+	#initialize e'rrythang
 	global lastSavedTime, text
 	lastSavedTime = time.time()
 	tag = ''
 	savedText = ''
 	paused = ''
 	silence = 0
+
+	#start listening
 	print "Listening"
 
 	while True:
@@ -295,7 +311,6 @@ def listen():
 						#process input text after every 10 seconds
 						if time.time() - lastSavedTime >= 10:
 							totalTime += time.time() - lastSavedTime
-							# print "total time: " + str(totalTime)
 
 							#only process newest chunk of text, rather than whole thing
 							toSplit = re.compile('%s(.*)'%savedText)
@@ -306,7 +321,6 @@ def listen():
 							#select tags for text chunk, and add them to the list of tags for this response
 							newTags = searchWords(textChunk)
 							for t in newTags:
-								# if t not in totalTags:
 								totalTags.append(t)
 
 							#reset saved text and time
@@ -314,6 +328,7 @@ def listen():
 							print "saved text: " + savedText
 							lastSavedTime = time.time()
 
+						#looking for "silences" where there's no new speech coming in
 						if paused == text:
 							print paused
 							silence += 1
@@ -341,6 +356,7 @@ def listen():
 	stream.close()
 	p.terminate()
 
+	#finishing up the response
 	if text != '':
 
 		# print "Elapsed time: " + str(time.time() - lastSavedTime)
@@ -374,13 +390,14 @@ def listen():
 	checkFollowUp(totalTags)
 
 def assignTerms(sentence):
+
+	#assigning tags based on terms in corpus
 	localTags = []
 	words = sentence.split(" ")
 	print words
 	for w in words:
 		for t in termCatalog:
 			if w == t[0]:
-				# print t
 				localTags.append(t[1])
 	return localTags
 	# print localTags
@@ -400,6 +417,7 @@ def returnQuestion(tagList):
 		#go through tags in tag list to find matches
 		if q[len(q) - 1] != "used":
 			print q
+
 			#only looking for questions that match the most heavily used tag
 			for i in range(5, len(q)):
 				if q[i] == tagList[0] and len(q) > 6:
@@ -420,8 +438,10 @@ def returnQuestion(tagList):
 				else:
 					pass
 
+		#append to list of okay questions
 		if questionScore > 0:
 			if questionScore > score:
+				#clears out list if there's a score higher than the current one
 				selection = []
 				selection.append(q)
 				score = questionScore
@@ -441,7 +461,7 @@ def returnQuestion(tagList):
 			q.append("used")
 			print q
 	
-	# modify current question to eventually see if there's a tied in follow up
+	# modify current question variable to eventually see if there's a tied in follow up
 	global currentQuestion
 	currentQuestion = questionSet.index(chosenQuestion)
 	print "Current Question: " + str(currentQuestion)
@@ -455,9 +475,9 @@ def returnQuestion(tagList):
 	lastSavedTime = time.time()
 
 	#ask highest scoring question
-	# print chosenQuestion
 	print chosenQuestion[0]
 
+	#write list of tags used & resulting question to transcript
 	with open(savedFile, "a") as toSave:
 		toSave.write('\n\n')
 		toSave.write('Tags found: ' + str(tagList) + '\n')
@@ -468,17 +488,19 @@ def returnQuestion(tagList):
 	except IOError:
 		pass
 
+	#clear out question selection list for next response
 	selection = []
 	global elapsedTime
 	elapsedTime = time.time() - startingTime
 	print "Time since beginning of program: " + str(elapsedTime) + " seconds"
-	# print selection
 
 	#call listen() again to keep the program going until exit
 	# typeResponse()
 	listen()
 
 def waitingPeriod():
+
+	#waits for indication to start -- key press for now, will likely be replaced by a sensor
 	global startingTime
 	global savedFile
 
@@ -494,11 +516,14 @@ def waitingPeriod():
 
 		waitingPeriod()
 
+#if 30 min have passed, go back to waiting period
 def goodbye():
 	speak("bye")
 
 	for q in questionSet:
 		for i in range(0, len(q)):
+
+			#clearing out "used" tags for the next participant
 			if q[i] == "used":
 				q.remove(q[i])
 
@@ -527,7 +552,6 @@ print "Emotions loaded!"
 #load term files
 for term in terms:
 	filename = term + ".txt"
-	# print filename
 	with open('files/' + filename, 'rb') as f:
 		lines = f.read().splitlines()
 		for line in lines:
@@ -540,11 +564,9 @@ print "Terms sorted!"
 with open('files/questions.csv', 'rU') as f:
 	reader = csv.reader(f, delimiter=";")
 	for row in reader:
-		# print len(row)
 		toAdd = []
 		for i in range(0, len(row)):
 			toAdd.append(row[i])
-		# print(toAdd)
 		questionSet.append(toAdd);
 
 print "Questions loaded!"
