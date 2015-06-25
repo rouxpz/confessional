@@ -277,8 +277,8 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=1,
-				frames_per_buffer=2048)
+				input_device_index=2,
+				frames_per_buffer=4096)
 
 	stream.start_stream()
 	# in_speech_bf = True
@@ -350,7 +350,9 @@ def listen():
 		# this is to account for buffer overflows
 		except IOError as io:
 			print io
-			buf = '\x00'*16*256*1
+			buf = '\x00'*4096
+		
+		sys.stdout.flush()
 
 	stream.stop_stream()
 	stream.close()
