@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import gc
 from os import system
 import re, sys, time, csv, pyaudio, wave, collections
 from sphinxbase import *
@@ -277,11 +278,11 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=2,
+				input_device_index=0,
 				frames_per_buffer=4096)
 
 	stream.start_stream()
-	# in_speech_bf = True
+	in_speech_bf = True
 	decoder.start_utt()
 
 	#initialize e'rrythang
@@ -291,6 +292,7 @@ def listen():
 	savedText = ''
 	paused = ''
 	silence = 0
+	counter = 0
 
 	#start listening
 	print "Listening"
@@ -302,6 +304,7 @@ def listen():
 			# print buf
 			if buf:
 				decoder.process_raw(buf, False, False)
+				counter = 0
 				try:
 					if  decoder.hyp().hypstr != '':
 						text = str(decoder.hyp().hypstr).lower()
@@ -343,6 +346,16 @@ def listen():
 				except AttributeError:
 					pass
 
+				if decoder.get_in_speech():
+					# sys.stdout.write(text)
+					sys.stdout.write('.')
+					sys.stdout.flush()
+					# counter += 1
+					# print counter
+				# else:
+				# 	decoder.end_utt()
+				# 	break
+
 				if silence > 30:
 					decoder.end_utt()
 					break
@@ -352,7 +365,7 @@ def listen():
 			print io
 			buf = '\x00'*4096
 		
-		sys.stdout.flush()
+		# print "garbage: " + str(gc.garbage)
 
 	stream.stop_stream()
 	stream.close()
