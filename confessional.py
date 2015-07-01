@@ -299,6 +299,8 @@ def listen():
 
 	while True:
 
+		passedTime = time.time() - lastSavedTime
+
 		try:
 			buf = stream.read(CHUNK)
 			# print buf
@@ -308,7 +310,8 @@ def listen():
 				try:
 					if  decoder.hyp().hypstr != '':
 						text = str(decoder.hyp().hypstr).lower()
-						# print "Elapsed time: " + str(time.time() - lastSavedTime)
+						# passedTime = time.time() - lastSavedTime
+						print "Elapsed time: " + str(passedTime)
 						# print text
 
 						#process input text after every 10 seconds
@@ -347,14 +350,12 @@ def listen():
 					pass
 
 				if decoder.get_in_speech():
-					# sys.stdout.write(text)
 					sys.stdout.write('.')
 					sys.stdout.flush()
-					# counter += 1
-					# print counter
-				# else:
-				# 	decoder.end_utt()
-				# 	break
+					print decoder.get_in_speech()
+				elif decoder.get_in_speech() == False and passedTime > 5:
+					decoder.end_utt()
+					break
 
 				if silence > 30:
 					decoder.end_utt()
