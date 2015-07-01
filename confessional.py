@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
-import gc
 from os import system
 import re, sys, time, csv, pyaudio, wave, collections
 from sphinxbase import *
 from pocketsphinx import *
 from random import randrange
 from pattern.en import tenses
+
+#TODO 7/1/15
+#1 - separate threads audio out vs. audio in
+#2 - ending flow questions
+#3 - code follow up paths for short/long answers, dig deeper answers, yes/no answers
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -51,7 +55,7 @@ termCatalog = []
 #empty list to store emotional content
 emotions = []
 
-#simple word count -- not being used right now
+#simple word count -- NOT USED RIGHT NOW
 def countWords(sentence):
 	words = sentence.split(" ")
 	for w in words:
