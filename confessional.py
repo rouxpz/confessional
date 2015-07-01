@@ -28,7 +28,7 @@ config = Decoder.default_config()
 config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
-config.set_float('-vad_threshold',1.0)
+config.set_float('-vad_threshold',2.0)
 config.set_int('-vad_postspeech', 100)
 
 decoder = Decoder(config)
@@ -282,8 +282,8 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=0,
-				frames_per_buffer=4096)
+				input_device_index=2,
+				frames_per_buffer=1024)
 
 	stream.start_stream()
 	in_speech_bf = True
@@ -357,18 +357,19 @@ def listen():
 					sys.stdout.write('.')
 					sys.stdout.flush()
 					print decoder.get_in_speech()
+
 				elif decoder.get_in_speech() == False and passedTime > 5:
 					decoder.end_utt()
 					break
 
-				if silence > 30:
+				if silence > 40:
 					decoder.end_utt()
 					break
 
 		# this is to account for buffer overflows
 		except IOError as io:
 			print io
-			buf = '\x00'*4096
+			buf = '\x00'*1024
 		
 		# print "garbage: " + str(gc.garbage)
 
@@ -436,7 +437,7 @@ def returnQuestion(tagList):
 
 		#go through tags in tag list to find matches
 		if q[len(q) - 1] != "used":
-			print q
+			# print q
 
 			#only looking for questions that match the most heavily used tag
 			for i in range(5, len(q)):
