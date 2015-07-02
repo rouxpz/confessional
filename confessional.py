@@ -282,7 +282,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=2,
+				input_device_index=0,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -358,11 +358,65 @@ def listen():
 					sys.stdout.flush()
 					print decoder.get_in_speech()
 
-				elif decoder.get_in_speech() == False and passedTime > 5:
+				elif silence > 120:
+					#finishing up the response
+					if text != '':
+
+						# print "Elapsed time: " + str(time.time() - lastSavedTime)
+						totalTime += time.time() - lastSavedTime
+						print "total time: " + str(totalTime)
+
+						if totalTime < 10:
+							totalTags.append('short')
+
+						#search and tag the last chunk of text
+						toSplit = re.compile('%s(.*)'%savedText)
+						m = toSplit.search(text)
+						if m != None:
+							textChunk = m.group(1)
+							newTags = searchWords(textChunk)
+						else:
+							newTags = searchWords(text)
+							
+						for t in newTags:
+							# if t not in totalTags:
+							totalTags.append(t)
+
+						print "final text: " + text
+						with open(savedFile, "a") as toSave:
+							toSave.write('Response: ' + text)
+							toSave.write('\n')
 					decoder.end_utt()
 					break
 
-				if silence > 40:
+				elif decoder.get_in_speech() == False and passedTime > 5:
+					#finishing up the response
+					if text != '':
+
+						# print "Elapsed time: " + str(time.time() - lastSavedTime)
+						totalTime += time.time() - lastSavedTime
+						print "total time: " + str(totalTime)
+
+						if totalTime < 10:
+							totalTags.append('short')
+
+						#search and tag the last chunk of text
+						toSplit = re.compile('%s(.*)'%savedText)
+						m = toSplit.search(text)
+						if m != None:
+							textChunk = m.group(1)
+							newTags = searchWords(textChunk)
+						else:
+							newTags = searchWords(text)
+							
+						for t in newTags:
+							# if t not in totalTags:
+							totalTags.append(t)
+
+						print "final text: " + text
+						with open(savedFile, "a") as toSave:
+							toSave.write('Response: ' + text)
+							toSave.write('\n')
 					decoder.end_utt()
 					break
 
