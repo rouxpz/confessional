@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
 from os import system
-import re, sys, time, csv, pyaudio, wave, collections
+import re, sys, time, csv, pyaudio, wave, collections, thread
 from sphinxbase import *
 from pocketsphinx import *
 from random import randrange
 from pattern.en import tenses
+from OSC import OSCClient, OSCMessage
 
 #TODO 7/1/15
 #1 - separate threads audio out vs. audio in
-#2 - ending flow questions
-#3 - code follow up paths for short/long answers, dig deeper answers, yes/no answers
+#2 - code follow up paths for short/long answers, dig deeper answers, yes/no answers
+#3 - ending flow questions
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -269,6 +270,11 @@ def typeResponse():
 
 #computer listening to what you say
 def listen():
+
+	print "Opening OSC"
+	client = OSCClient()
+	client.connect( ("localhost", 9000) )
+
 	totalTags = []
 	print totalTags
 
@@ -417,7 +423,15 @@ def listen():
 						with open(savedFile, "a") as toSave:
 							toSave.write('Response: ' + text)
 							toSave.write('\n')
+
+					print "checking follow up"
+					msg = OSCMessage()
+					msg.setAddress("/print")
+					msg.append(totalTags)
+					client.send(msg)
 					decoder.end_utt()
+					print "Closing OSC"
+					client.close()
 					break
 
 		# this is to account for buffer overflows
@@ -431,37 +445,6 @@ def listen():
 	stream.close()
 	p.terminate()
 
-	#finishing up the response
-	if text != '':
-
-		# print "Elapsed time: " + str(time.time() - lastSavedTime)
-		totalTime += time.time() - lastSavedTime
-		print "total time: " + str(totalTime)
-
-		if totalTime < 10:
-			totalTags.append('short')
-
-		#search and tag the last chunk of text
-		toSplit = re.compile('%s(.*)'%savedText)
-		m = toSplit.search(text)
-		if m != None:
-			textChunk = m.group(1)
-			newTags = searchWords(textChunk)
-		else:
-			newTags = searchWords(text)
-			
-		for t in newTags:
-			# if t not in totalTags:
-			totalTags.append(t)
-
-		print "final text: " + text
-		with open(savedFile, "a") as toSave:
-			toSave.write('Response: ' + text)
-			toSave.write('\n')
-
-	print totalTags
-
-	print "checking follow up"
 	checkFollowUp(totalTags)
 
 def assignTerms(sentence):
