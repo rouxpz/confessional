@@ -1,12 +1,13 @@
-import OSC
-import time, threading, pyaudio, wave, sys
+import OSC, csv, time, threading, pyaudio, wave, sys, collections
+from random import randrange
+from OSC import OSCClient, OSCMessage
 
 questionSet = []
 currentQuestion = 0
 questionCount = 0
 followup = False
 text = ''
-savedFile = ''
+# savedFile = ''
 
 s = OSC.OSCServer( ("localhost", 9000) )
 s.addDefaultHandlers()
@@ -21,9 +22,13 @@ with open('files/questions.csv', 'rU') as f:
 		questionSet.append(toAdd);
 
 print "Questions loaded!"
+print questionSet
 
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
+
+	print followup
+	print tagList
 
 	#sorts tag list into order based on which tags were used the most
 	counter = collections.Counter(tagList)
@@ -50,7 +55,7 @@ def checkFollowUp(tagList):
 			except IOError:
 				pass
 			# typeResponse()
-			listen()
+			# listen()
 
 		#process for yes/no answers; should branch in two directions
 		elif questionSet[currentQuestion][2] == 'yesno':
@@ -60,7 +65,7 @@ def checkFollowUp(tagList):
 			except IOError:
 				pass
 			# typeResponse()
-			listen()
+			# listen()
 
 		#process for short answers; follow up only returned if the response has "short" in the tag list
 		elif questionSet[currentQuestion][2] == 'short' and 'short' in tagList:
@@ -70,7 +75,7 @@ def checkFollowUp(tagList):
 			except IOError:
 				pass
 			# typeResponse()
-			listen()
+			# listen()
 
 		#if there's no follow up, return a question the normal way
 		else:
@@ -92,8 +97,8 @@ def checkFollowUp(tagList):
 		returnQuestion(['warmup'])
 
 	#exit automatically after 30 minutes have passed
-	elif elapsedTime > 1800:
-		goodbye()
+	# elif elapsedTime > 1800:
+	# 	goodbye()
 
 	#if no conditions have been met after all of that, return a question the normal way
 	else:
@@ -114,12 +119,12 @@ def speak(number):
 					output = True)
 
 	#read data  
-	data = f.readframes(CHUNK)
+	data = f.readframes(1024)
 
 	#play stream  
 	while data != '':  
 		stream.write(data)  
-		data = f.readframes(CHUNK)
+		data = f.readframes(1024)
 
 	#stop stream  
 	stream.stop_stream()  
@@ -128,9 +133,21 @@ def speak(number):
 	#close pyaudio instance
 	pa.terminate()
 
+	#send data out via OSC to let the other program know to start listening
+	print "Opening OSC"
+	client = OSCClient()
+	client.connect(("localhost", 8001))
+	msg = OSCMessage()
+	msg.setAddress("/print")
+	msg.append("Listen now")
+	client.send(msg)
+	print "Closing OSC"
+	client.close()
+
 
 #selecting a question to return to participant
 def returnQuestion(tagList):
+	# global savedFile
 	print "returning a question!"
 	print tagList
 	selection = []
@@ -197,18 +214,18 @@ def returnQuestion(tagList):
 	questionCount += 1
 	print questionCount
 
-	global lastSavedTime
-	print "Elapsed time: " + str(time.time() - lastSavedTime)
-	lastSavedTime = time.time()
+	# global lastSavedTime
+	# print "Elapsed time: " + str(time.time() - lastSavedTime)
+	# lastSavedTime = time.time()
 
 	#ask highest scoring question
 	print chosenQuestion[0]
 
 	#write list of tags used & resulting question to transcript
-	with open(savedFile, "a") as toSave:
-		toSave.write('\n\n')
-		toSave.write('Tags found: ' + str(tagList) + '\n')
-		toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
+	# with open(savedFile, "a") as toSave:
+	# 	toSave.write('\n\n')
+	# 	toSave.write('Tags found: ' + str(tagList) + '\n')
+	# 	toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
 
 	try:
 		speak(chosenQuestion[1])
@@ -217,28 +234,9 @@ def returnQuestion(tagList):
 
 	#clear out question selection list for next response
 	selection = []
-	global elapsedTime
-	elapsedTime = time.time() - startingTime
-	print "Time since beginning of program: " + str(elapsedTime) + " seconds"
-
-	#send data out via OSC to let the other program know to start listening
-
-def waitingPeriod():
-
-	#waits for indication to start -- key press for now, will likely be replaced by a sensor
-	global startingTime
-	global savedFile
-
-	start = int(raw_input('>'))
-
-	if start == 0:
-		startingTime = time.time()
-		savedFile = "transcript" + str(startingTime) + ".txt"
-		print "Program starting"
-		returnQuestion(['intro'])
-	else:
-		print "Sorry, wrong key"
-		waitingPeriod()
+	# global elapsedTime
+	# elapsedTime = time.time() - startingTime
+	# print "Time since beginning of program: " + str(elapsedTime) + " seconds"
 
 #if 30 min have passed, go back to waiting period
 def goodbye():
@@ -251,7 +249,7 @@ def goodbye():
 			if q[i] == "used":
 				q.remove(q[i])
 
-	waitingPeriod()
+	# waitingPeriod()
 
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
@@ -261,6 +259,11 @@ def receive_text(addr, tags, stuff, source):
     print "typetags %s" % tags
     print "data %s" % stuff
     print "---"
+
+    if "intro" in stuff:
+    	returnQuestion(["intro"])
+    else:
+    	checkFollowUp(stuff)
 
 s.addMsgHandler("/print", receive_text) # adding our function
 

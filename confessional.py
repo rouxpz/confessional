@@ -56,6 +56,10 @@ termCatalog = []
 #empty list to store emotional content
 emotions = []
 
+print "Opening OSC"
+client = OSCClient()
+client.connect( ("localhost", 9000) )
+
 #simple word count -- NOT USED RIGHT NOW
 def countWords(sentence):
 	words = sentence.split(" ")
@@ -270,10 +274,6 @@ def typeResponse():
 
 #computer listening to what you say
 def listen():
-
-	print "Opening OSC"
-	client = OSCClient()
-	client.connect( ("localhost", 9000) )
 
 	totalTags = []
 	print totalTags

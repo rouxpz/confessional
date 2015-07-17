@@ -4,6 +4,7 @@ from sphinxbase import *
 from pocketsphinx import *
 from random import randrange
 from pattern.en import tenses
+import OSC, threading
 from OSC import OSCClient, OSCMessage
 
 #TODO 7/1/15
@@ -22,6 +23,9 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
 
+s = OSC.OSCServer( ("localhost", 8001) )
+s.addDefaultHandlers()
+
 # establish pocketsphinx configuration
 config = Decoder.default_config()
 config.set_string('-lm', lm)
@@ -39,6 +43,44 @@ indices = []
 lastSavedTime = time.time()
 text = ''
 savedFile = ''
+
+#global list to hold the total tags for each response
+totalTags = []
+
+#terms to select question
+terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
+termCatalog = []
+
+#empty list to store emotional content
+emotions = []
+
+#waiting period to open the program
+def waitingPeriod():
+
+	#waits for indication to start -- key press for now, will likely be replaced by a sensor
+	global startingTime
+	global savedFile
+
+	start = int(raw_input('>'))
+
+	if start == 0:
+		print "Opening OSC"
+		client = OSCClient()
+		client.connect( ("localhost", 9000) )
+		startingTime = time.time()
+		savedFile = "transcript" + str(startingTime) + ".txt"
+		print "Program starting"
+		# returnQuestion(['intro'])
+		msg = OSCMessage()
+		msg.setAddress("/print")
+		msg.append('intro')
+		client.send(msg)
+		print "Closing OSC"
+		client.close()
+
+	else:
+		print "Sorry, wrong key"
+		waitingPeriod()
 
 #searching input phrase with regular expressions & emotional lexicon
 def searchWords(sentence):
@@ -254,9 +296,8 @@ def listen():
 					msg.setAddress("/print")
 					msg.append(totalTags)
 					client.send(msg)
-					decoder.end_utt()
-					print "Closing OSC"
 					client.close()
+					print "Closed OSC"
 					break
 
 		# this is to account for buffer overflows
@@ -266,11 +307,14 @@ def listen():
 		
 		# print "garbage: " + str(gc.garbage)
 
+	decoder.end_utt()
 	stream.stop_stream()
 	stream.close()
 	p.terminate()
 
-	checkFollowUp(totalTags)
+	print "TERMINATED"
+
+	# checkFollowUp(totalTags)
 
 def assignTerms(sentence):
 
@@ -285,6 +329,15 @@ def assignTerms(sentence):
 	return localTags
 	# print localTags
 
+# define a message-handler function for the server to call.
+def receive_text(addr, tags, stuff, source):
+    print "---"
+    print "received new osc msg from %s" % OSC.getUrlStr(source)
+    print "with addr : %s" % addr
+    print "typetags %s" % tags
+    print "data %s" % stuff
+    print "---"
+    listen()
 
 ##### MAIN SCRIPT #####
 
@@ -315,3 +368,23 @@ for term in terms:
 
 # print termCatalog
 print "Terms sorted!"
+
+s.addMsgHandler("/print", receive_text) # adding our function
+
+waitingPeriod()
+
+s.addMsgHandler("/print", receive_text) # adding our function
+print "\nStarting OSCServer. Use ctrl-C to quit."
+st = threading.Thread(target = s.serve_forever)
+st.start()
+
+try :
+    while 1 :
+        time.sleep(5)
+
+except KeyboardInterrupt :
+    print "\nClosing OSCServer."
+    s.close()
+    print "Waiting for Server-thread to finish"
+    st.join() ##!!!
+    print "Done"
