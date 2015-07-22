@@ -196,6 +196,7 @@ def returnQuestion(tagList):
 		final.append(narrowed[0])
 	elif len(narrowed) > 1:
 		print "Choosing from tags"
+		print narrowed
 		# go through tags to find matches
 		for t in tagList[1]:
 			# print t
@@ -217,6 +218,8 @@ def returnQuestion(tagList):
 							print q[0]
 							final.append(q)
 
+	print final
+
 	if len(final) > 1:
 		rand = randrange(0, len(final))
 		print "index chosen: " + str(rand)
@@ -225,8 +228,13 @@ def returnQuestion(tagList):
 	elif len(final) == 1:
 		chosenQuestion = final[0]
 		print chosenQuestion
-	else:
+	elif len(final) < 1 and len(narrowed) > 1:
 		print "elaboration needed"
+		rand = randrange(0, len(narrowed))
+		print "index chosen: " + str(rand)
+		chosenQuestion = narrowed[rand]
+	else:
+		returnQuestion([[], ['elaboration']])
 
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:

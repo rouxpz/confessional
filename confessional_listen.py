@@ -74,7 +74,6 @@ def waitingPeriod():
 		# returnQuestion(['intro'])
 		msg = OSCMessage()
 		msg.setAddress("/print")
-		msg.append('')
 		msg.append('*')
 		msg.append('intro')
 		client.send(msg)
@@ -191,7 +190,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=0,
+				input_device_index=2,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -389,8 +388,8 @@ def receive_text(addr, tags, stuff, source):
     print "typetags %s" % tags
     print "data %s" % stuff
     print "---"
-    # listen()
-    typeResponse()
+    listen()
+    # typeResponse()
 
 ##### MAIN SCRIPT #####
 #load questions
