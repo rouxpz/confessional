@@ -144,60 +144,88 @@ def speak(number):
 	print "Closing OSC"
 	client.close()
 
+def getKey(item):
+	return item[1]
 
 #selecting a question to return to participant
 def returnQuestion(tagList):
-	# global savedFile
 	print "returning a question!"
 	print tagList
 	selection = []
+	narrowed = []
+	final = []
 	score = 0
 	chosenQuestion = ''
 
-	for q in questionSet:
-		#initialize score of 0
-		questionScore = 0
+	if len(tagList[0]) > 0:
+		for word in tagList[0]:
+			print word
 
-		#go through tags in tag list to find matches
-		if q[len(q) - 1] != "used":
-			# print q
+			for q in questionSet:
+				if q[len(q) - 1] != "used":
+					if len(q) > 13:
+						for i in range (13, len(q)):
+							if word == q[i]:
+								if len(selection) == 0:
+									print "Adding " + q[1] + " for the first time!"
+									selection.append([q, 0])
+								else:
+									for s in selection:
+										if s[0][0] == q[0]:
+											print q[1] + "is already there!"
+											s[1] += 1
+											break
+										else:
+											print "Adding " + q[1] + " to the choices!"
+											selection.append([q, 0])
 
-			#only looking for questions that match the most heavily used tag
-			for i in range(5, len(q)):
-				if q[i] == tagList[0] and len(q) > 6:
-					questionScore = 1
-					print q[0] + ", score: " + str(questionScore)
-
-					for j in range(1, len(tagList)):
-						if q[i] == tagList[j]:
-							# add to question score
-							questionScore += 1
-							print q[0] + ", score: " + str(questionScore)
-
-				elif q[i] == tagList[0] and len(q) <= 6:
-					# print "Question that fits: "
-					questionScore = 1
-					print q[0] + ", score: " + str(questionScore)
-
-				else:
-					pass
-
-		#append to list of okay questions
-		if questionScore > 0:
-			if questionScore > score:
-				#clears out list if there's a score higher than the current one
-				selection = []
-				selection.append(q)
-				score = questionScore
-			elif questionScore == score:
-				selection.append(q)
-
-	# print selection
 	if len(selection) > 0:
-		rand = randrange(0, len(selection))
+		for s in selection:
+			print s[0][0] + " used " + str(s[1]) + " times"
+
+		ordered = sorted(selection, key=getKey, reverse = True)
+
+		for o in ordered:
+			if o[1] == ordered[0][1]:
+				print "Highest score: " + o[0][0]
+				narrowed.append(o[0])
+
+	if len(narrowed) == 1:
+		print narrowed
+		final.append(narrowed[0])
+	elif len(narrowed) > 1:
+		print "Choosing from tags"
+		# go through tags to find matches
+		for t in tagList[1]:
+			# print t
+			for n in narrowed:
+				# print n
+				for i in range(5, 13):
+					if n[i] == t:
+						print n[0]
+						final.append(n)
+	elif len(narrowed) == 0:
+		print "Choosing from tags"
+		# go through tags to find matches
+		for t in tagList[1]:
+			# print t
+			for q in questionSet:
+				if q[len(q)-1] != "used":
+					for i in range(5, 13):
+						if q[i] == t:
+							print q[0]
+							final.append(q)
+
+	if len(final) > 1:
+		rand = randrange(0, len(final))
 		print "index chosen: " + str(rand)
-		chosenQuestion = selection[rand]
-		# print chosenQuestion
+		chosenQuestion = final[rand]
+		print chosenQuestion
+	elif len(final) == 1:
+		chosenQuestion = final[0]
+		print chosenQuestion
+	else:
+		print "elaboration needed"
 
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:
@@ -214,18 +242,18 @@ def returnQuestion(tagList):
 	questionCount += 1
 	print questionCount
 
-	# global lastSavedTime
-	# print "Elapsed time: " + str(time.time() - lastSavedTime)
-	# lastSavedTime = time.time()
+	global lastSavedTime
+	print "Elapsed time: " + str(time.time() - lastSavedTime)
+	lastSavedTime = time.time()
 
-	#ask highest scoring question
+	# #ask highest scoring question
 	print chosenQuestion[0]
 
-	#write list of tags used & resulting question to transcript
-	# with open(savedFile, "a") as toSave:
-	# 	toSave.write('\n\n')
-	# 	toSave.write('Tags found: ' + str(tagList) + '\n')
-	# 	toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
+	# #write list of tags used & resulting question to transcript
+	with open(savedFile, "a") as toSave:
+		toSave.write('\n\n')
+		toSave.write('Tags found: ' + str(tagList) + '\n')
+		toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
 
 	try:
 		speak(chosenQuestion[1])
@@ -233,10 +261,14 @@ def returnQuestion(tagList):
 		pass
 
 	#clear out question selection list for next response
-	selection = []
-	# global elapsedTime
-	# elapsedTime = time.time() - startingTime
-	# print "Time since beginning of program: " + str(elapsedTime) + " seconds"
+	# selection = []
+	global elapsedTime
+	elapsedTime = time.time() - startingTime
+	print "Time since beginning of program: " + str(elapsedTime) + " seconds"
+
+	#call listen() again to keep the program going until exit
+	# typeResponse()
+	listen()
 
 #if 30 min have passed, go back to waiting period
 def goodbye():

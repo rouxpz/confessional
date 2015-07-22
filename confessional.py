@@ -56,10 +56,6 @@ termCatalog = []
 #empty list to store emotional content
 emotions = []
 
-print "Opening OSC"
-client = OSCClient()
-client.connect( ("localhost", 9000) )
-
 #simple word count -- NOT USED RIGHT NOW
 def countWords(sentence):
 	words = sentence.split(" ")
@@ -86,15 +82,20 @@ def countWords(sentence):
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
 
-	#sorts tag list into order based on which tags were used the most
-	counter = collections.Counter(tagList)
-	if counter:
-		ordered = counter.most_common()
-		tagList = []
+	orderedTags = []
 
-		#rebuild tag list based on sorted version
-		for word, count in ordered:
-			tagList.append(word)
+	for t in tagList:
+		#sorts tag list into order based on which tags were used the most
+		counter = collections.Counter(t)
+		if counter:
+			ordered = counter.most_common()
+			t = []
+
+			#rebuild tag list based on sorted version
+			for word, count in ordered:
+				t.append(word)
+
+		orderedTags.append(t)
 
 	global followup
 
@@ -110,8 +111,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			# typeResponse()
-			listen()
+			typeResponse()
+			# listen()
 
 		#process for yes/no answers; should branch in two directions
 		elif questionSet[currentQuestion][2] == 'yesno':
@@ -120,8 +121,8 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			# typeResponse()
-			listen()
+			typeResponse()
+			# listen()
 
 		#process for short answers; follow up only returned if the response has "short" in the tag list
 		elif questionSet[currentQuestion][2] == 'short' and 'short' in tagList:
@@ -130,27 +131,27 @@ def checkFollowUp(tagList):
 				speak(questionSet[currentQuestion][3])
 			except IOError:
 				pass
-			# typeResponse()
-			listen()
+			typeResponse()
+			# listen()
 
 		#if there's no follow up, return a question the normal way
 		else:
 			followup = False
-			returnQuestion(tagList)
+			returnQuestion(orderedTags)
 
 	#if we are currently on a follow up question:
 	elif followup == True:
 		#are we currently on an intro question?
 		if questionSet[currentQuestion][5] == 'intro':
 			followup = False
-			returnQuestion(['warmup'])
+			returnQuestion([[],['warmup']])
 		elif questionSet[currentQuestion][3] != 'intro':
 			followup = False
-			returnQuestion(tagList)
+			returnQuestion(orderedTags)
 
 	#intro question with no follow up
 	elif questionSet[currentQuestion][5] == 'intro':
-		returnQuestion(['warmup'])
+		returnQuestion([[],['warmup']])
 
 	#exit automatically after 30 minutes have passed
 	elif elapsedTime > 1800:
@@ -158,7 +159,7 @@ def checkFollowUp(tagList):
 
 	#if no conditions have been met after all of that, return a question the normal way
 	else:
-		returnQuestion(tagList)
+		returnQuestion(orderedTags)
 
 #searching input phrase with regular expressions & emotional lexicon
 def searchWords(sentence):
@@ -167,8 +168,8 @@ def searchWords(sentence):
 	numbers = []
 	emotionsUsed = []
 
-	for s in split:
-		print tenses(s)
+	# for s in split:
+	# 	print tenses(s)
 
 	# collect thematic tags from text analysis
 	localTags = assignTerms(sentence)
@@ -194,20 +195,13 @@ def searchWords(sentence):
 		print ordered
 		max_emotion, max_value = ordered[0]
 
-		if len(ordered) > 1:
-			second_emotion, second_value = ordered[1]
-			# print max_emotion + ", " + second_emotion
-			if max_value > second_value:
-				# returnQuestion(max_emotion)
-				tag = max_emotion
-			else:
-				print "elaboration necessary"
-				tags.append('elaboration')
-		else:
-			tags.append(max_emotion)
+		for o in ordered:
+			emotion, value = o
+			if value == max_value:
+				tags[1].append(emotion)
 
-	if len(tags) == 0:
-		tags.append('elaboration')
+	if len(tags[1]) == 0:
+		tags[1].append('elaboration')
 		print ("elaboration necessary")
 
 	print tags
@@ -274,6 +268,10 @@ def typeResponse():
 
 #computer listening to what you say
 def listen():
+
+	print "Opening OSC"
+	client = OSCClient()
+	client.connect( ("localhost", 9000) )
 
 	totalTags = []
 	print totalTags
@@ -451,67 +449,111 @@ def assignTerms(sentence):
 
 	#assigning tags based on terms in corpus
 	localTags = []
+	specificTags = []
+	termTags = []
+
 	words = sentence.split(" ")
 	print words
 	for w in words:
+
+		for q in questionSet:
+			if len(q) > 13:
+				for i in range(13, len(q)):
+					if w == q[i]:
+						specificTags.append(w)
+
 		for t in termCatalog:
 			if w == t[0]:
-				localTags.append(t[1])
+				termTags.append(t[1])
+
+	localTags.append(specificTags)
+	localTags.append(termTags)
+
+	print localTags
 	return localTags
-	# print localTags
+
+def getKey(item):
+	return item[1]
 
 #selecting a question to return to participant
 def returnQuestion(tagList):
 	print "returning a question!"
 	print tagList
 	selection = []
+	narrowed = []
+	final = []
 	score = 0
 	chosenQuestion = ''
 
-	for q in questionSet:
-		#initialize score of 0
-		questionScore = 0
+	if len(tagList[0]) > 0:
+		for word in tagList[0]:
+			print word
 
-		#go through tags in tag list to find matches
-		if q[len(q) - 1] != "used":
-			# print q
+			for q in questionSet:
+				if q[len(q) - 1] != "used":
+					if len(q) > 13:
+						for i in range (13, len(q)):
+							if word == q[i]:
+								if len(selection) == 0:
+									print "Adding " + q[1] + " for the first time!"
+									selection.append([q, 0])
+								else:
+									for s in selection:
+										if s[0][0] == q[0]:
+											print q[1] + "is already there!"
+											s[1] += 1
+											break
+										else:
+											print "Adding " + q[1] + " to the choices!"
+											selection.append([q, 0])
 
-			#only looking for questions that match the most heavily used tag
-			for i in range(5, len(q)):
-				if q[i] == tagList[0] and len(q) > 6:
-					questionScore = 1
-					print q[0] + ", score: " + str(questionScore)
-
-					for j in range(1, len(tagList)):
-						if q[i] == tagList[j]:
-							# add to question score
-							questionScore += 1
-							print q[0] + ", score: " + str(questionScore)
-
-				elif q[i] == tagList[0] and len(q) <= 6:
-					# print "Question that fits: "
-					questionScore = 1
-					print q[0] + ", score: " + str(questionScore)
-
-				else:
-					pass
-
-		#append to list of okay questions
-		if questionScore > 0:
-			if questionScore > score:
-				#clears out list if there's a score higher than the current one
-				selection = []
-				selection.append(q)
-				score = questionScore
-			elif questionScore == score:
-				selection.append(q)
-
-	# print selection
 	if len(selection) > 0:
-		rand = randrange(0, len(selection))
+		for s in selection:
+			print s[0][0] + " used " + str(s[1]) + " times"
+
+		ordered = sorted(selection, key=getKey, reverse = True)
+
+		for o in ordered:
+			if o[1] == ordered[0][1]:
+				print "Highest score: " + o[0][0]
+				narrowed.append(o[0])
+
+	if len(narrowed) == 1:
+		print narrowed
+		final.append(narrowed[0])
+	elif len(narrowed) > 1:
+		print "Choosing from tags"
+		# go through tags to find matches
+		for t in tagList[1]:
+			# print t
+			for n in narrowed:
+				# print n
+				for i in range(5, 13):
+					if n[i] == t:
+						print n[0]
+						final.append(n)
+	elif len(narrowed) == 0:
+		print "Choosing from tags"
+		# go through tags to find matches
+		for t in tagList[1]:
+			# print t
+			for q in questionSet:
+				if q[len(q)-1] != "used":
+					for i in range(5, 13):
+						if q[i] == t:
+							print q[0]
+							final.append(q)
+
+	if len(final) > 1:
+		rand = randrange(0, len(final))
 		print "index chosen: " + str(rand)
-		chosenQuestion = selection[rand]
-		# print chosenQuestion
+		chosenQuestion = final[rand]
+		print chosenQuestion
+	elif len(final) == 1:
+		chosenQuestion = final[0]
+		print chosenQuestion
+	else:
+		print "elaboration needed"
 
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:
@@ -532,10 +574,10 @@ def returnQuestion(tagList):
 	print "Elapsed time: " + str(time.time() - lastSavedTime)
 	lastSavedTime = time.time()
 
-	#ask highest scoring question
+	# #ask highest scoring question
 	print chosenQuestion[0]
 
-	#write list of tags used & resulting question to transcript
+	# #write list of tags used & resulting question to transcript
 	with open(savedFile, "a") as toSave:
 		toSave.write('\n\n')
 		toSave.write('Tags found: ' + str(tagList) + '\n')
@@ -547,14 +589,14 @@ def returnQuestion(tagList):
 		pass
 
 	#clear out question selection list for next response
-	selection = []
+	# selection = []
 	global elapsedTime
 	elapsedTime = time.time() - startingTime
 	print "Time since beginning of program: " + str(elapsedTime) + " seconds"
 
 	#call listen() again to keep the program going until exit
-	# typeResponse()
-	listen()
+	typeResponse()
+	# listen()
 
 def waitingPeriod():
 
@@ -568,7 +610,7 @@ def waitingPeriod():
 		startingTime = time.time()
 		savedFile = "transcript" + str(startingTime) + ".txt"
 		print "Program starting"
-		returnQuestion(['intro'])
+		returnQuestion([[],['intro']])
 	else:
 		print "Sorry, wrong key"
 

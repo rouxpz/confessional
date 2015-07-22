@@ -89,8 +89,8 @@ def searchWords(sentence):
 	numbers = []
 	emotionsUsed = []
 
-	for s in split:
-		print tenses(s)
+	# for s in split:
+	# 	print tenses(s)
 
 	# collect thematic tags from text analysis
 	localTags = assignTerms(sentence)
@@ -116,20 +116,13 @@ def searchWords(sentence):
 		print ordered
 		max_emotion, max_value = ordered[0]
 
-		if len(ordered) > 1:
-			second_emotion, second_value = ordered[1]
-			# print max_emotion + ", " + second_emotion
-			if max_value > second_value:
-				# returnQuestion(max_emotion)
-				tag = max_emotion
-			else:
-				print "elaboration necessary"
-				tags.append('elaboration')
-		else:
-			tags.append(max_emotion)
+		for o in ordered:
+			emotion, value = o
+			if value == max_value:
+				tags[1].append(emotion)
 
-	if len(tags) == 0:
-		tags.append('elaboration')
+	if len(tags[1]) == 0:
+		tags[1].append('elaboration')
 		print ("elaboration necessary")
 
 	print tags
@@ -320,14 +313,28 @@ def assignTerms(sentence):
 
 	#assigning tags based on terms in corpus
 	localTags = []
+	specificTags = []
+	termTags = []
+
 	words = sentence.split(" ")
 	print words
 	for w in words:
+
+		for q in questionSet:
+			if len(q) > 13:
+				for i in range(13, len(q)):
+					if w == q[i]:
+						specificTags.append(w)
+
 		for t in termCatalog:
 			if w == t[0]:
-				localTags.append(t[1])
+				termTags.append(t[1])
+
+	localTags.append(specificTags)
+	localTags.append(termTags)
+
+	print localTags
 	return localTags
-	# print localTags
 
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
