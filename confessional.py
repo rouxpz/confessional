@@ -254,13 +254,13 @@ def typeResponse():
 		sys.exit(0)
 
 	else:
-		split = say.split(" ")
-		if len(split) < 5:
-			totalTags.append('short')
-
 		newTags = searchWords(say)
 		for t in newTags:
 			totalTags.append(t)
+
+		split = say.split(" ")
+		if len(split) < 5:
+			totalTags[1].append('short')
 
 		print totalTags
 

@@ -39,6 +39,7 @@ decoder = Decoder(config)
 #initialize e'rrythang
 counted = []
 indices = []
+questionSet = []
 
 lastSavedTime = time.time()
 text = ''
@@ -73,6 +74,8 @@ def waitingPeriod():
 		# returnQuestion(['intro'])
 		msg = OSCMessage()
 		msg.setAddress("/print")
+		msg.append('')
+		msg.append('*')
 		msg.append('intro')
 		client.send(msg)
 		print "Closing OSC"
@@ -127,6 +130,46 @@ def searchWords(sentence):
 
 	print tags
 	return tags
+#computer listening to what you say -- keyboard entry version for testing
+def typeResponse():
+	totalTags = []
+
+	say = raw_input("Text entry here: ")
+
+	#begin text processing
+	say = say.lower() #convert everything to lowercase to avoid duplicates
+
+	exitCondition = re.findall("goodbye", say)
+
+	if len(exitCondition) > 0:
+		s = 'say Goodbye'
+		system(s)
+		sys.exit(0)
+
+	else:
+		newTags = searchWords(say)
+		for t in newTags:
+			totalTags.append(t)
+
+		split = say.split(" ")
+		if len(split) < 5:
+			totalTags[1].append('short')
+
+		print totalTags
+
+		print "Opening OSC"
+		client = OSCClient()
+		client.connect( ("localhost", 9000) )
+		print "checking follow up"
+		msg = OSCMessage()
+		msg.setAddress("/print")
+		msg.append(totalTags[0])
+		msg.append('*')
+		msg.append(totalTags[1])
+		client.send(msg)
+		client.close()
+		print "Closed OSC"
+		# checkFollowUp(totalTags)
 
 #computer listening to what you say
 def listen():
@@ -141,7 +184,7 @@ def listen():
 	text = ''
 
 	p = pyaudio.PyAudio()
-	totalTime = 0;
+	totalTime = 0
 	
 	#open pyaudio stream
 	stream = p.open(format=FORMAT,
@@ -232,9 +275,6 @@ def listen():
 						totalTime += time.time() - lastSavedTime
 						print "total time: " + str(totalTime)
 
-						if totalTime < 10:
-							totalTags.append('short')
-
 						#search and tag the last chunk of text
 						toSplit = re.compile('%s(.*)'%savedText)
 						m = toSplit.search(text)
@@ -247,6 +287,9 @@ def listen():
 						for t in newTags:
 							# if t not in totalTags:
 							totalTags.append(t)
+
+						if totalTime < 10:
+							totalTags[1].append('short')
 
 						print "final text: " + text
 						with open(savedFile, "a") as toSave:
@@ -263,9 +306,6 @@ def listen():
 						totalTime += time.time() - lastSavedTime
 						print "total time: " + str(totalTime)
 
-						if totalTime < 10:
-							totalTags.append('short')
-
 						#search and tag the last chunk of text
 						toSplit = re.compile('%s(.*)'%savedText)
 						m = toSplit.search(text)
@@ -279,6 +319,9 @@ def listen():
 							# if t not in totalTags:
 							totalTags.append(t)
 
+						if totalTime < 10:
+							totalTags[1].append('short')
+
 						print "final text: " + text
 						with open(savedFile, "a") as toSave:
 							toSave.write('Response: ' + text)
@@ -287,7 +330,9 @@ def listen():
 					print "checking follow up"
 					msg = OSCMessage()
 					msg.setAddress("/print")
-					msg.append(totalTags)
+					msg.append(totalTags[0])
+					msg.append('*')
+					msg.append(totalTags[1])
 					client.send(msg)
 					client.close()
 					print "Closed OSC"
@@ -344,9 +389,20 @@ def receive_text(addr, tags, stuff, source):
     print "typetags %s" % tags
     print "data %s" % stuff
     print "---"
-    listen()
+    # listen()
+    typeResponse()
 
 ##### MAIN SCRIPT #####
+#load questions
+with open('files/questions.csv', 'rU') as f:
+	reader = csv.reader(f, delimiter=";")
+	for row in reader:
+		toAdd = []
+		for i in range(0, len(row)):
+			toAdd.append(row[i])
+		questionSet.append(toAdd);
+
+print "Questions loaded!"
 
 #load emotion lexicon
 with open('files/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.csv', 'rb') as f:

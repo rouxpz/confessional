@@ -22,23 +22,24 @@ with open('files/questions.csv', 'rU') as f:
 		questionSet.append(toAdd);
 
 print "Questions loaded!"
-print questionSet
 
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
 
-	print followup
-	print tagList
+	orderedTags = []
 
-	#sorts tag list into order based on which tags were used the most
-	counter = collections.Counter(tagList)
-	if counter:
-		ordered = counter.most_common()
-		tagList = []
+	for t in tagList:
+		#sorts tag list into order based on which tags were used the most
+		counter = collections.Counter(t)
+		if counter:
+			ordered = counter.most_common()
+			t = []
 
-		#rebuild tag list based on sorted version
-		for word, count in ordered:
-			tagList.append(word)
+			#rebuild tag list based on sorted version
+			for word, count in ordered:
+				t.append(word)
+
+		orderedTags.append(t)
 
 	global followup
 
@@ -87,14 +88,14 @@ def checkFollowUp(tagList):
 		#are we currently on an intro question?
 		if questionSet[currentQuestion][5] == 'intro':
 			followup = False
-			returnQuestion(['warmup'])
+			returnQuestion([[],['warmup']])
 		elif questionSet[currentQuestion][3] != 'intro':
 			followup = False
 			returnQuestion(tagList)
 
 	#intro question with no follow up
 	elif questionSet[currentQuestion][5] == 'intro':
-		returnQuestion(['warmup'])
+		returnQuestion([[],['warmup']])
 
 	#exit automatically after 30 minutes have passed
 	# elif elapsedTime > 1800:
@@ -242,18 +243,18 @@ def returnQuestion(tagList):
 	questionCount += 1
 	print questionCount
 
-	global lastSavedTime
-	print "Elapsed time: " + str(time.time() - lastSavedTime)
-	lastSavedTime = time.time()
+	# global lastSavedTime
+	# print "Elapsed time: " + str(time.time() - lastSavedTime)
+	# lastSavedTime = time.time()
 
 	# #ask highest scoring question
 	print chosenQuestion[0]
 
 	# #write list of tags used & resulting question to transcript
-	with open(savedFile, "a") as toSave:
-		toSave.write('\n\n')
-		toSave.write('Tags found: ' + str(tagList) + '\n')
-		toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
+	# with open(savedFile, "a") as toSave:
+	# 	toSave.write('\n\n')
+	# 	toSave.write('Tags found: ' + str(tagList) + '\n')
+	# 	toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
 
 	try:
 		speak(chosenQuestion[1])
@@ -262,13 +263,10 @@ def returnQuestion(tagList):
 
 	#clear out question selection list for next response
 	# selection = []
-	global elapsedTime
-	elapsedTime = time.time() - startingTime
-	print "Time since beginning of program: " + str(elapsedTime) + " seconds"
+	# global elapsedTime
+	# elapsedTime = time.time() - startingTime
+	# print "Time since beginning of program: " + str(elapsedTime) + " seconds"
 
-	#call listen() again to keep the program going until exit
-	# typeResponse()
-	listen()
 
 #if 30 min have passed, go back to waiting period
 def goodbye():
@@ -292,10 +290,16 @@ def receive_text(addr, tags, stuff, source):
     print "data %s" % stuff
     print "---"
 
-    if "intro" in stuff:
-    	returnQuestion(["intro"])
+    tags = []
+    tags.append(stuff[0:stuff.index('*')])
+    tags.append(stuff[stuff.index('*') + 1:])
+    # stuff = stuff.split('*')
+
+    # print tags
+    if "intro" in tags[1]:
+    	returnQuestion([[],["intro"]])
     else:
-    	checkFollowUp(stuff)
+    	checkFollowUp(tags)
 
 s.addMsgHandler("/print", receive_text) # adding our function
 
