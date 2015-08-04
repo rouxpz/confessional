@@ -190,7 +190,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=2,
+				input_device_index=0,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -365,9 +365,9 @@ def assignTerms(sentence):
 	for w in words:
 
 		for q in questionSet:
-			if len(q) > 13:
-				for i in range(13, len(q)):
-					if w == q[i]:
+			if len(q) > 8:
+				for i in range(8, len(q)):
+					if w == q[i] and w not in specificTags:
 						specificTags.append(w)
 
 		for t in termCatalog:
@@ -394,7 +394,7 @@ def receive_text(addr, tags, stuff, source):
 ##### MAIN SCRIPT #####
 #load questions
 with open('files/questions.csv', 'rU') as f:
-	reader = csv.reader(f, delimiter=";")
+	reader = csv.reader(f, delimiter=",")
 	for row in reader:
 		toAdd = []
 		for i in range(0, len(row)):
@@ -402,6 +402,7 @@ with open('files/questions.csv', 'rU') as f:
 		questionSet.append(toAdd);
 
 print "Questions loaded!"
+print questionSet
 
 #load emotion lexicon
 with open('files/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.csv', 'rb') as f:
