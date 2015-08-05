@@ -7,10 +7,11 @@ from pattern.en import tenses
 import OSC, threading
 from OSC import OSCClient, OSCMessage
 
-#TODO 7/1/15
-#1 - separate threads audio out vs. audio in
-#2 - code follow up paths for short/long answers, dig deeper answers, yes/no answers
-#3 - ending flow questions
+#TODO 8/4/15
+#1 - first/notfirst dichotomy
+#2 - confidence score for pocketsphinx
+#3 - map confidence score to stalling/speak clearer questions
+#4 - pattern integration for grammatical purposes
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -32,7 +33,7 @@ config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
 config.set_float('-vad_threshold',2.0)
-config.set_int('-vad_postspeech', 100)
+config.set_int('-vad_postspeech', 200)
 
 decoder = Decoder(config)
 
@@ -162,7 +163,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=0,
+				input_device_index=3,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -199,8 +200,9 @@ def listen():
 						# print text
 
 						#process input text after every 10 seconds
-						if time.time() - lastSavedTime >= 10:
-							totalTime += time.time() - lastSavedTime
+						if passedTime >= 10:
+							totalTime += passedTime
+							print "total time:" + str(totalTime)
 
 							#only process newest chunk of text, rather than whole thing
 							toSplit = re.compile('%s(.*)'%savedText)
@@ -238,46 +240,47 @@ def listen():
 					sys.stdout.flush()
 					print decoder.get_in_speech()
 
-				elif silence > 180:
-					#finishing up the response
-					if text != '':
+				# elif silence > 360:
+				# 	#finishing up the response
+				# 	if text != '':
 
-						# print "Elapsed time: " + str(time.time() - lastSavedTime)
-						totalTime += time.time() - lastSavedTime
-						print "total time: " + str(totalTime)
+				# 		print "Elapsed time: " + str(time.time() - lastSavedTime)
+				# 		totalTime += passedTime
+				# 		print "total time: " + str(totalTime)
 
-						sessionTime += totalTime
-						print "total session time: " + str(sessionTime)
+				# 		sessionTime += totalTime
+				# 		print "total session time: " + str(sessionTime)
 
-						#search and tag the last chunk of text
-						toSplit = re.compile('%s(.*)'%savedText)
-						m = toSplit.search(text)
-						if m != None:
-							textChunk = m.group(1)
-							newTags = searchWords(textChunk)
-						else:
-							newTags = searchWords(text)
+				# 		#search and tag the last chunk of text
+				# 		toSplit = re.compile('%s(.*)'%savedText)
+				# 		m = toSplit.search(text)
+				# 		if m != None:
+				# 			textChunk = m.group(1)
+				# 			newTags = searchWords(textChunk)
+				# 		else:
+				# 			newTags = searchWords(text)
 							
-						for t in newTags:
-							# if t not in totalTags:
-							totalTags.append(t)
+				# 		for t in newTags:
+				# 			# if t not in totalTags:
+				# 			totalTags.append(t)
 
-						if totalTime < 10:
-							totalTags[1].append('short')
+				# 		if totalTime < 10:
+				# 			totalTags[1].append('short')
 
-						print "final text: " + text
-						with open(savedFile, "a") as toSave:
-							toSave.write('Response: ' + text)
-							toSave.write('\n')
-					decoder.end_utt()
-					break
+				# 		print "final text: " + text
+				# 		with open(savedFile, "a") as toSave:
+				# 			toSave.write('Response: ' + text)
+				# 			toSave.write('\n')
+				# 	decoder.end_utt()
+				# 	break
 
 				elif decoder.get_in_speech() == False and passedTime > 5:
+
 					#finishing up the response
 					if text != '':
 
-						# print "Elapsed time: " + str(time.time() - lastSavedTime)
-						totalTime += time.time() - lastSavedTime
+						print "Elapsed time: " + str(passedTime)
+						totalTime += passedTime
 						print "total time: " + str(totalTime)
 
 						sessionTime += totalTime
@@ -313,6 +316,7 @@ def listen():
 						msg.append('*')
 						msg.append(totalTags[1])
 					else: #otherwise, if we've gone for half an hour
+						msg.append('')
 						msg.append('*')
 						msg.append('end')
 					client.send(msg)

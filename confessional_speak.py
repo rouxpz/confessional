@@ -322,7 +322,7 @@ def receive_text(addr, tags, stuff, source):
 		savedFile = tags[1][1]
 		returnQuestion([[],["intro"]])
 	elif "end" in tags[1]:
-		returnQuestion([], ["end"])
+		returnQuestion([[], ["end"]])
 	else:
 		checkFollowUp(tags)
 
