@@ -47,6 +47,7 @@ savedFile = ''
 
 #global list to hold the total tags for each response
 totalTags = []
+sessionTime = 0
 
 #terms to select question
 terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
@@ -59,8 +60,15 @@ emotions = []
 def waitingPeriod():
 
 	#waits for indication to start -- key press for now, will likely be replaced by a sensor
-	global startingTime
+	global startingTime, sessionTime
 	global savedFile
+
+	sessionTime = 0
+
+	for q in questionSet:
+		if q[len(q)-1] == 'used':
+			print q
+			q.remove(q[len(q)-1])
 
 	start = int(raw_input('>'))
 
@@ -70,12 +78,14 @@ def waitingPeriod():
 		client.connect( ("localhost", 9000) )
 		startingTime = time.time()
 		savedFile = "transcript" + str(startingTime) + ".txt"
+
 		print "Program starting"
 		# returnQuestion(['intro'])
 		msg = OSCMessage()
 		msg.setAddress("/print")
 		msg.append('*')
 		msg.append('intro')
+		msg.append(savedFile)
 		client.send(msg)
 		print "Closing OSC"
 		client.close()
@@ -173,6 +183,8 @@ def typeResponse():
 #computer listening to what you say
 def listen():
 
+	global sessionTime
+
 	print "Opening OSC"
 	client = OSCClient()
 	client.connect( ("localhost", 9000) )
@@ -266,13 +278,16 @@ def listen():
 					sys.stdout.flush()
 					print decoder.get_in_speech()
 
-				elif silence > 120:
+				elif silence > 180:
 					#finishing up the response
 					if text != '':
 
 						# print "Elapsed time: " + str(time.time() - lastSavedTime)
 						totalTime += time.time() - lastSavedTime
 						print "total time: " + str(totalTime)
+
+						sessionTime += totalTime
+						print "total session time: " + str(sessionTime)
 
 						#search and tag the last chunk of text
 						toSplit = re.compile('%s(.*)'%savedText)
@@ -305,6 +320,9 @@ def listen():
 						totalTime += time.time() - lastSavedTime
 						print "total time: " + str(totalTime)
 
+						sessionTime += totalTime
+						print "total session time: " + str(sessionTime)
+
 						#search and tag the last chunk of text
 						toSplit = re.compile('%s(.*)'%savedText)
 						m = toSplit.search(text)
@@ -327,11 +345,16 @@ def listen():
 							toSave.write('\n')
 
 					print "checking follow up"
+
 					msg = OSCMessage()
 					msg.setAddress("/print")
-					msg.append(totalTags[0])
-					msg.append('*')
-					msg.append(totalTags[1])
+					if sessionTime <= 1800: #if we've still got time
+						msg.append(totalTags[0])
+						msg.append('*')
+						msg.append(totalTags[1])
+					else: #otherwise, if we've gone for half an hour
+						msg.append('*')
+						msg.append('end')
 					client.send(msg)
 					client.close()
 					print "Closed OSC"

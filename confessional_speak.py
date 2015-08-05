@@ -7,7 +7,7 @@ currentQuestion = 0
 questionCount = 0
 onFollowup = False
 text = ''
-# savedFile = ''
+savedFile = ''
 
 terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
 
@@ -123,6 +123,13 @@ def checkFollowUp(tagList):
 
 #computer speaking back to you if exit condition is not met
 def speak(number):
+
+	global savedFile
+
+	with open(savedFile, "a") as toSave:
+		toSave.write('\n')
+		toSave.write('Question: ' + questionSet[number][0])
+		toSave.write('\n')
 
 	question = questionSet[number]
 	filename = "files/audio files/" + str(question[1]) + ".wav"
@@ -241,14 +248,8 @@ def returnQuestion(tagList):
 						if q[i] == t:
 							print q[0]
 							final.append(q)
-							print final
-					# else:
-					# 	if q[5] == t:
-					# 		print q[0]
-					# 		final.append(q)
-					# 		print final
 
-	print final
+	# print final
 
 	if len(final) > 1:
 		rand = randrange(0, len(final))
@@ -329,23 +330,27 @@ def returnQuestion(tagList):
 
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
-    print "---"
-    print "received new osc msg from %s" % OSC.getUrlStr(source)
-    print "with addr : %s" % addr
-    print "typetags %s" % tags
-    print "data %s" % stuff
-    print "---"
 
-    tags = []
-    tags.append(stuff[0:stuff.index('*')])
-    tags.append(stuff[stuff.index('*') + 1:])
+	global savedFile
+
+	print "---"
+	print "received new osc msg from %s" % OSC.getUrlStr(source)
+	print "with addr : %s" % addr
+	print "typetags %s" % tags
+	print "data %s" % stuff
+	print "---"
+
+	tags = []
+	tags.append(stuff[0:stuff.index('*')])
+	tags.append(stuff[stuff.index('*') + 1:])
     # stuff = stuff.split('*')
 
     # print tags
-    if "intro" in tags[1]:
-    	returnQuestion([[],["intro"]])
-    else:
-    	checkFollowUp(tags)
+	if "intro" in tags[1]:
+		savedFile = tags[1][1]
+		returnQuestion([[],["intro"]])
+	else:
+		checkFollowUp(tags)
 
 s.addMsgHandler("/print", receive_text) # adding our function
 
