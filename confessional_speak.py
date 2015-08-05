@@ -268,13 +268,17 @@ def returnQuestion(tagList):
 	else:
 		if questionSet[currentQuestion][5] == 'intro':
 			returnQuestion([[], ['warmup']])
+			return
 		elif questionSet[currentQuestion][5] == 'warmup':
 			returnQuestion([[], ['gettingwarmer']])
+			return
 		elif questionSet[currentQuestion][5] == 'gettingwarmer':
 			returnQuestion([[], ['aboutyou']])
+			return
 		else:
 			newTerm = randrange(0, len(terms))
 			returnQuestion([[], [terms[newTerm]]])
+			return
 
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:

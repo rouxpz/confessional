@@ -219,6 +219,7 @@ def listen():
 							savedText = text
 							print "saved text: " + savedText
 							lastSavedTime = time.time()
+							passedTime = 0
 
 						#looking for "silences" where there's no new speech coming in
 						if paused == text:
