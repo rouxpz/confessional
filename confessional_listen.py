@@ -139,46 +139,6 @@ def searchWords(sentence):
 
 	print tags
 	return tags
-#computer listening to what you say -- keyboard entry version for testing
-def typeResponse():
-	totalTags = []
-
-	say = raw_input("Text entry here: ")
-
-	#begin text processing
-	say = say.lower() #convert everything to lowercase to avoid duplicates
-
-	exitCondition = re.findall("goodbye", say)
-
-	if len(exitCondition) > 0:
-		s = 'say Goodbye'
-		system(s)
-		sys.exit(0)
-
-	else:
-		newTags = searchWords(say)
-		for t in newTags:
-			totalTags.append(t)
-
-		split = say.split(" ")
-		if len(split) < 5:
-			totalTags[1].append('short')
-
-		print totalTags
-
-		print "Opening OSC"
-		client = OSCClient()
-		client.connect( ("localhost", 9000) )
-		print "checking follow up"
-		msg = OSCMessage()
-		msg.setAddress("/print")
-		msg.append(totalTags[0])
-		msg.append('*')
-		msg.append(totalTags[1])
-		client.send(msg)
-		client.close()
-		print "Closed OSC"
-		# checkFollowUp(totalTags)
 
 #computer listening to what you say
 def listen():
@@ -411,7 +371,11 @@ def receive_text(addr, tags, stuff, source):
     print "typetags %s" % tags
     print "data %s" % stuff
     print "---"
-    listen()
+
+    if "Listen now" in stuff:
+    	listen()
+    else:
+    	waitingPeriod()
     # typeResponse()
 
 ##### MAIN SCRIPT #####

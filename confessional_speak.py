@@ -5,7 +5,7 @@ from OSC import OSCClient, OSCMessage
 questionSet = []
 currentQuestion = 0
 questionCount = 0
-onFollowup = False
+notFirst = False
 text = ''
 savedFile = ''
 
@@ -113,10 +113,6 @@ def checkFollowUp(tagList):
 				else:
 					returnQuestion(tagList)
 
-	#exit automatically after 30 minutes have passed
-	# elif elapsedTime > 1800:
-	# 	goodbye()
-
 	#if no conditions have been met after all of that, return a question the normal way
 	else:
 		returnQuestion(tagList)
@@ -167,7 +163,12 @@ def speak(number):
 	client.connect(("localhost", 8001))
 	msg = OSCMessage()
 	msg.setAddress("/print")
-	msg.append("Listen now")
+
+	if 'end' in questionSet[number] and 'followup' in questionSet[number]:
+		msg.append("End now")
+	else:
+		msg.append("Listen now")
+	
 	client.send(msg)
 	print "Closing OSC"
 	client.close()
@@ -290,43 +291,14 @@ def returnQuestion(tagList):
 	questionCount += 1
 	print questionCount
 
-	# global lastSavedTime
-	# print "Elapsed time: " + str(time.time() - lastSavedTime)
-	# lastSavedTime = time.time()
-
 	# #ask highest scoring question
 	print chosenQuestion[0]
-
-	# #write list of tags used & resulting question to transcript
-	# with open(savedFile, "a") as toSave:
-	# 	toSave.write('\n\n')
-	# 	toSave.write('Tags found: ' + str(tagList) + '\n')
-	# 	toSave.write('Question chosen: ' + chosenQuestion[0] + '\n')
 
 	try:
 		speak(currentQuestion)
 	except IOError:
 		pass
 
-	#clear out question selection list for next response
-	# selection = []
-	# global elapsedTime
-	# elapsedTime = time.time() - startingTime
-	# print "Time since beginning of program: " + str(elapsedTime) + " seconds"
-
-
-#if 30 min have passed, go back to waiting period
-# def goodbye():
-# 	speak("bye")
-
-# 	for q in questionSet:
-# 		for i in range(0, len(q)):
-
-# 			#clearing out "used" tags for the next participant
-# 			if q[i] == "used":
-# 				q.remove(q[i])
-
-	# waitingPeriod()
 
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
@@ -349,6 +321,8 @@ def receive_text(addr, tags, stuff, source):
 	if "intro" in tags[1]:
 		savedFile = tags[1][1]
 		returnQuestion([[],["intro"]])
+	elif "end" in tags[1]:
+		returnQuestion([], ["end"])
 	else:
 		checkFollowUp(tags)
 
