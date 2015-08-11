@@ -4,12 +4,14 @@ from OSC import OSCClient, OSCMessage
 
 questionSet = []
 currentQuestion = 0
+currentTheme = ''
 questionCount = 0
 notFirst = False
 text = ''
 savedFile = ''
 
 terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
+termsUnused = terms
 
 s = OSC.OSCServer( ("localhost", 9000) )
 s.addDefaultHandlers()
@@ -45,6 +47,7 @@ def checkFollowUp(tagList):
 	# 	orderedTags.append(t)
 
 	global currentQuestion
+	global currentTheme
 	# for i in range(0, len(questionSet)):
 	followUpType = questionSet[currentQuestion][2]
 	# followUpType = questionSet[i][2]
@@ -63,8 +66,8 @@ def checkFollowUp(tagList):
 
 		#yes/no questions look for affirmative or negative responses and respond accordingly
 		elif followUpType == 'yesno':
-			response = str(raw_input('yes no question >'))
-			if response == 'yes':
+			# response = str(raw_input('yes no question >'))
+			if 'short' in tagList[1]: #FIX THIS, you need affirmative and negative dictionaries
 				if questionSet[currentQuestion][3] != '':
 					for j in range(0, len(questionSet)):
 						if questionSet[currentQuestion][3] == questionSet[j][1]:
@@ -76,7 +79,7 @@ def checkFollowUp(tagList):
 				else:
 					returnQuestion(tagList)
 
-			elif response == 'no':
+			else:
 				if questionSet[i][4] != '':
 					for j in range(0, len(questionSet)):
 						if questionSet[currentQuestion][4] == questionSet[j][1]:
@@ -179,7 +182,9 @@ def getKey(item):
 #selecting a question to return to participant
 def returnQuestion(tagList):
 
-	#integrate "notfirst" and "first" tags in here
+	global currentTheme
+
+	#integrate "notfirst" and "escapehatch" tags in here
 	print "returning a question!"
 	print tagList
 	selection = []
@@ -276,9 +281,29 @@ def returnQuestion(tagList):
 			returnQuestion([[], ['aboutyou']])
 			return
 		else:
-			newTerm = randrange(0, len(terms))
-			returnQuestion([[], [terms[newTerm]]])
-			return
+			#if nothing is found from terms, continue on current theme tag until no more questions remain, then shift to new theme with "escapehatch"
+			themeUnused = []
+			for q in questionSet:
+				if q[len(q) - 1] != 'used' and q[5] == currentTheme:
+					themeUnused.append(q)
+			if len(themeUnused) > 0:
+				returnQuestion([[], [currentTheme]])
+				return
+			else:
+				escapeQuestions = []
+				for t in termsUnused:
+					if t == currentTheme:
+						termsUnused.remove(t)
+				randIndex = randrange(0, len(termsUnused))
+				newTerm = terms[randIndex]
+				
+				for q in questionSet:
+					if q[5] == newTerm and q[7] == 'escapehatch':
+						escapeQuestions.append(q)
+
+				newQuestion = randrange(0, len(escapeQuestions))
+				chosenQuestion = escapeQuestions[newQuestion]
+
 
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:
@@ -289,7 +314,9 @@ def returnQuestion(tagList):
 	# modify current question variable to eventually see if there's a tied in follow up
 	global currentQuestion
 	currentQuestion = questionSet.index(chosenQuestion)
+	currentTheme = chosenQuestion[5]
 	print "Current Question: " + str(currentQuestion)
+	print "Current Theme: " + currentTheme
 
 	global questionCount
 	questionCount += 1

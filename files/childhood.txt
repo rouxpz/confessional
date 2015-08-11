@@ -1,41 +1,1 @@
-kid
-kids
-parents
-mom
-dad
-mother
-father
-child
-children
-son
-sons
-daughter
-daughters
-girl
-girls
-boy
-boys
-little
-young
-younger
-growing up
-brother
-sister
-brothers
-sisters
-sibling
-siblings
-school
-class
-home
-teacher
-teachers
-play
-recess
-playground
-bully
-bullied
-bullies
-friend
-friends
-best friend
+my parentsour parentsmy momour mommy dadour dadmy motherour mothermy fatherour fathermy familyour familyas a childwhen i was a childas a kidwhen i was a kidas childrenwhen we were childrenas kidswhen we were kidssonsonsdaughterdaughterswanted a girlwanted a boywhen i was littlewhen we were littlewhen i was youngwhen we were youngwhen i was youngerwhen we were youngergrew upgrowing upa brothera sisteronly childmy brothermy sistermy brothersmy sisterssiblingsat schoolin schoolmy schoolin classteacherteachersprincipalrecessplaygroundbullybulliedbulliesmy best friendpranksstudyingstudiedhomework

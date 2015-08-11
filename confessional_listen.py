@@ -49,6 +49,7 @@ savedFile = ''
 #global list to hold the total tags for each response
 totalTags = []
 sessionTime = 0
+savedSessionTime = 0
 
 #terms to select question
 terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
@@ -61,10 +62,10 @@ emotions = []
 def waitingPeriod():
 
 	#waits for indication to start -- key press for now, will likely be replaced by a sensor
-	global startingTime, sessionTime
+	global startingTime, savedSessionTime
 	global savedFile
 
-	sessionTime = 0
+	savedSessionTime = time.time()
 
 	for q in questionSet:
 		if q[len(q)-1] == 'used':
@@ -284,8 +285,8 @@ def listen():
 						totalTime += passedTime
 						print "total time: " + str(totalTime)
 
-						sessionTime += totalTime
-						print "total session time: " + str(sessionTime)
+						# sessionTime += totalTime
+						# print "total session time: " + str(sessionTime)
 
 						#search and tag the last chunk of text
 						toSplit = re.compile('%s(.*)'%savedText)
@@ -329,6 +330,7 @@ def listen():
 		except IOError as io:
 			print io
 			buf = '\x00'*1024
+			passedTime = 0
 		
 		# print "garbage: " + str(gc.garbage)
 
@@ -348,19 +350,31 @@ def assignTerms(sentence):
 	specificTags = []
 	termTags = []
 
-	words = sentence.split(" ")
-	print words
-	for w in words:
+	for q in questionSet:
+		if len(q) > 8:
+			for i in range(8, len(q)):
+				w = re.search(q[i], sentence)
+				if w != None:
+					specificTags.append(q[i])
 
-		for q in questionSet:
-			if len(q) > 8:
-				for i in range(8, len(q)):
-					if w == q[i] and w not in specificTags:
-						specificTags.append(w)
+	for t in termCatalog:
+		w = re.search(t[0], sentence)
+		if w != None:
+			termTags.append(t[1])
 
-		for t in termCatalog:
-			if w == t[0]:
-				termTags.append(t[1])
+	# words = sentence.split(" ")
+	# print words
+	# for w in words:
+
+	# 	for q in questionSet:
+	# 		if len(q) > 8:
+	# 			for i in range(8, len(q)):
+	# 				if w == q[i] and w not in specificTags:
+	# 					specificTags.append(w)
+
+	# 	for t in termCatalog:
+	# 		if w == t[0]:
+	# 			termTags.append(t[1])
 
 	localTags.append(specificTags)
 	localTags.append(termTags)
@@ -370,17 +384,24 @@ def assignTerms(sentence):
 
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
-    print "---"
-    print "received new osc msg from %s" % OSC.getUrlStr(source)
-    print "with addr : %s" % addr
-    print "typetags %s" % tags
-    print "data %s" % stuff
-    print "---"
 
-    if "Listen now" in stuff:
-    	listen()
-    else:
-    	waitingPeriod()
+	global sessionTime, savedSessionTime
+
+	print "---"
+	print "received new osc msg from %s" % OSC.getUrlStr(source)
+	print "with addr : %s" % addr
+	print "typetags %s" % tags
+	print "data %s" % stuff
+	print "---"
+
+	if "Listen now" in stuff:
+		interval = time.time() - savedSessionTime
+		sessionTime += interval
+		savedSessionTime = time.time()
+		print "total session time: " + str(sessionTime)
+		listen()
+	else:
+		waitingPeriod()
     # typeResponse()
 
 ##### MAIN SCRIPT #####
