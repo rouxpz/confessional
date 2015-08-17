@@ -7,11 +7,10 @@ from pattern.en import tenses
 import OSC, threading
 from OSC import OSCClient, OSCMessage
 
-#TODO 8/4/15
-#1 - first/notfirst dichotomy
-#2 - confidence score for pocketsphinx
-#3 - map confidence score to stalling/speak clearer questions
-#4 - pattern integration for grammatical purposes
+#TODO 8/19/15
+#1 - confidence score for pocketsphinx
+#2 - map confidence score to stalling/speak clearer questions
+#3 - pattern integration for grammatical purposes
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -45,6 +44,7 @@ questionSet = []
 lastSavedTime = time.time()
 text = ''
 savedFile = ''
+toAnswer = ''
 
 #global list to hold the total tags for each response
 totalTags = []
@@ -52,7 +52,7 @@ sessionTime = 0
 savedSessionTime = 0
 
 #terms to select question
-terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
+terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong", "yes"]
 termCatalog = []
 
 #empty list to store emotional content
@@ -62,15 +62,8 @@ emotions = []
 def waitingPeriod():
 
 	#waits for indication to start -- key press for now, will likely be replaced by a sensor
-	global startingTime, savedSessionTime
+	global savedSessionTime
 	global savedFile
-
-	savedSessionTime = time.time()
-
-	for q in questionSet:
-		if q[len(q)-1] == 'used':
-			print q
-			q.remove(q[len(q)-1])
 
 	start = int(raw_input('>'))
 
@@ -78,8 +71,9 @@ def waitingPeriod():
 		print "Opening OSC"
 		client = OSCClient()
 		client.connect( ("localhost", 9000) )
-		startingTime = time.time()
-		savedFile = "transcript" + str(startingTime) + ".txt"
+		sessionTime = 0
+		savedSessionTime = time.time()
+		savedFile = "transcript" + str(savedSessionTime) + ".txt"
 
 		print "Program starting"
 		# returnQuestion(['intro'])
@@ -91,6 +85,7 @@ def waitingPeriod():
 		client.send(msg)
 		print "Closing OSC"
 		client.close()
+		return
 
 	else:
 		print "Sorry, wrong key"
@@ -113,31 +108,31 @@ def searchWords(sentence):
 		tags.append(t)
 	
 	#collect emotion tags
-	for emotion in emotions:
-		er = r"\s" + emotion[0] + r"\s"
-		emotion_match = re.search(er, sentence)
-		if emotion_match != None:
-			if len(emotion) < 10:
-				for i in range(1, len(emotion)):
-					print emotion[0] + ", " + emotion[i]
-					emotionsUsed.append(emotion[i])
+	# for emotion in emotions:
+	# 	er = r"\s" + emotion[0] + r"\s"
+	# 	emotion_match = re.search(er, sentence)
+	# 	if emotion_match != None:
+	# 		if len(emotion) < 10:
+	# 			for i in range(1, len(emotion)):
+	# 				print emotion[0] + ", " + emotion[i]
+	# 				emotionsUsed.append(emotion[i])
 
 	#which emotion is used most; need to change this to weight more accurately, right now if two emotions are equal an elaboration is returned
-	counter = collections.Counter(emotionsUsed)
-	print counter
-	if counter:
-		ordered = counter.most_common()
-		print ordered
-		max_emotion, max_value = ordered[0]
+	# counter = collections.Counter(emotionsUsed)
+	# print counter
+	# if counter:
+	# 	ordered = counter.most_common()
+	# 	print ordered
+	# 	max_emotion, max_value = ordered[0]
 
-		for o in ordered:
-			emotion, value = o
-			if value == max_value:
-				tags[1].append(emotion)
+	# 	for o in ordered:
+	# 		emotion, value = o
+	# 		if value == max_value:
+	# 			tags[1].append(emotion)
 
-	if len(tags[1]) == 0:
-		tags[1].append('elaboration')
-		print ("elaboration necessary")
+	# if len(tags[1]) == 0:
+	# 	tags[1].append('current')
+	# 	print ("elaboration necessary")
 
 	print tags
 	return tags
@@ -145,13 +140,17 @@ def searchWords(sentence):
 #computer listening to what you say
 def listen():
 
-	global sessionTime
+	global sessionTime, toAnswer
+	print "question to answer: " + toAnswer
+	toAnswer = toAnswer.replace('...', ' ').replace('.', '').replace('?', '').replace('!', '').lower()
+	questionWords = toAnswer.split(' ')
+	print questionWords
 
 	print "Opening OSC"
 	client = OSCClient()
 	client.connect( ("localhost", 9000) )
 
-	totalTags = []
+	totalTags = [[], []]
 	print totalTags
 
 	text = ''
@@ -164,7 +163,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=3,
+				input_device_index=0,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -213,8 +212,15 @@ def listen():
 
 							#select tags for text chunk, and add them to the list of tags for this response
 							newTags = searchWords(textChunk)
-							for t in newTags:
-								totalTags.append(t)
+							
+							print len(newTags)
+							for t in newTags[0]:
+								if t != '':
+									totalTags[0].append(t)
+
+							for t in newTags[1]:
+								if t != '':
+									totalTags[1].append(t)
 
 							#reset saved text and time
 							savedText = text
@@ -242,67 +248,49 @@ def listen():
 					sys.stdout.flush()
 					print decoder.get_in_speech()
 
-				# elif silence > 360:
-				# 	#finishing up the response
-				# 	if text != '':
-
-				# 		print "Elapsed time: " + str(time.time() - lastSavedTime)
-				# 		totalTime += passedTime
-				# 		print "total time: " + str(totalTime)
-
-				# 		sessionTime += totalTime
-				# 		print "total session time: " + str(sessionTime)
-
-				# 		#search and tag the last chunk of text
-				# 		toSplit = re.compile('%s(.*)'%savedText)
-				# 		m = toSplit.search(text)
-				# 		if m != None:
-				# 			textChunk = m.group(1)
-				# 			newTags = searchWords(textChunk)
-				# 		else:
-				# 			newTags = searchWords(text)
-							
-				# 		for t in newTags:
-				# 			# if t not in totalTags:
-				# 			totalTags.append(t)
-
-				# 		if totalTime < 10:
-				# 			totalTags[1].append('short')
-
-				# 		print "final text: " + text
-				# 		with open(savedFile, "a") as toSave:
-				# 			toSave.write('Response: ' + text)
-				# 			toSave.write('\n')
-				# 	decoder.end_utt()
-				# 	break
-
 				elif decoder.get_in_speech() == False and passedTime > 5:
 
 					#finishing up the response
 					if text != '':
 
+						searchText = text + ' ' + toAnswer
+						print "text to search: " + searchText
+
 						print "Elapsed time: " + str(passedTime)
 						totalTime += passedTime
 						print "total time: " + str(totalTime)
 
-						# sessionTime += totalTime
-						# print "total session time: " + str(sessionTime)
-
 						#search and tag the last chunk of text
 						toSplit = re.compile('%s(.*)'%savedText)
-						m = toSplit.search(text)
+						m = toSplit.search(searchText)
 						if m != None:
 							textChunk = m.group(1)
 							newTags = searchWords(textChunk)
 						else:
-							newTags = searchWords(text)
-							
-						for t in newTags:
-							# if t not in totalTags:
-							totalTags.append(t)
+							newTags = searchWords(searchText)
+						
+						print len(newTags)	
+						# for t in newTags:
+						# 	# if t not in totalTags:
+						# 	totalTags.append(t)
+
+						for t in newTags[0]:
+							if t != '':
+								totalTags[0].append(t)
+
+						for t in newTags[1]:
+							if t != '':
+								totalTags[1].append(t)
 
 						if totalTime < 10:
 							totalTags[1].append('short')
+							totalTags[1].append('current')
+
+						if len(totalTags[1]) == 0:
+							totalTags[1].append('current')
+
+
+						print "tags collected: " + str(totalTags)
 
 						print "final text: " + text
 						with open(savedFile, "a") as toSave:
@@ -313,10 +301,11 @@ def listen():
 
 					msg = OSCMessage()
 					msg.setAddress("/print")
-					if sessionTime <= 1800: #if we've still got time
+					if sessionTime <= 30: #if we've still got time
 						msg.append(totalTags[0])
 						msg.append('*')
 						msg.append(totalTags[1])
+						print "message to send: " + str(msg)
 					else: #otherwise, if we've gone for half an hour
 						msg.append('')
 						msg.append('*')
@@ -331,8 +320,6 @@ def listen():
 			print io
 			buf = '\x00'*1024
 			passedTime = 0
-		
-		# print "garbage: " + str(gc.garbage)
 
 	decoder.end_utt()
 	stream.stop_stream()
@@ -340,8 +327,6 @@ def listen():
 	p.terminate()
 
 	print "TERMINATED"
-
-	# checkFollowUp(totalTags)
 
 def assignTerms(sentence):
 
@@ -353,28 +338,17 @@ def assignTerms(sentence):
 	for q in questionSet:
 		if len(q) > 8:
 			for i in range(8, len(q)):
-				w = re.search(q[i], sentence)
+				toSearch = r'\b' + re.escape(q[i]) + r'\b'
+				w = re.search(toSearch, sentence)
 				if w != None:
 					specificTags.append(q[i])
 
 	for t in termCatalog:
-		w = re.search(t[0], sentence)
+		toSearch = r'\b' + re.escape(t[0]) + r'\b'
+		w = re.search(toSearch, sentence)
 		if w != None:
+			print t[1] + " found, using " + t[0]
 			termTags.append(t[1])
-
-	# words = sentence.split(" ")
-	# print words
-	# for w in words:
-
-	# 	for q in questionSet:
-	# 		if len(q) > 8:
-	# 			for i in range(8, len(q)):
-	# 				if w == q[i] and w not in specificTags:
-	# 					specificTags.append(w)
-
-	# 	for t in termCatalog:
-	# 		if w == t[0]:
-	# 			termTags.append(t[1])
 
 	localTags.append(specificTags)
 	localTags.append(termTags)
@@ -385,7 +359,7 @@ def assignTerms(sentence):
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
 
-	global sessionTime, savedSessionTime
+	global sessionTime, savedSessionTime, toAnswer
 
 	print "---"
 	print "received new osc msg from %s" % OSC.getUrlStr(source)
@@ -395,6 +369,7 @@ def receive_text(addr, tags, stuff, source):
 	print "---"
 
 	if "Listen now" in stuff:
+		toAnswer = stuff[1]
 		interval = time.time() - savedSessionTime
 		sessionTime += interval
 		savedSessionTime = time.time()
@@ -415,7 +390,7 @@ with open('files/questions.csv', 'rU') as f:
 		questionSet.append(toAdd);
 
 print "Questions loaded!"
-print questionSet
+# print questionSet
 
 #load emotion lexicon
 with open('files/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.csv', 'rb') as f:

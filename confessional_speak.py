@@ -10,7 +10,7 @@ notFirst = False
 text = ''
 savedFile = ''
 
-terms = ["belief", "childhood", "crazy", "family", "hurt", "love", "money", "secret", "sex", "trust", "work", "worry", "wrong"]
+terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong"]
 termsUnused = terms
 
 s = OSC.OSCServer( ("localhost", 9000) )
@@ -33,19 +33,6 @@ def checkFollowUp(tagList):
 	orderedTags = []
 	tempQuestion = 0
 
-	# for t in tagList:
-	# 	#sorts tag list into order based on which tags were used the most
-	# 	counter = collections.Counter(t)
-	# 	if counter:
-	# 		ordered = counter.most_common()
-	# 		t = []
-
-	# 		#rebuild tag list based on sorted version
-	# 		for word, count in ordered:
-	# 			t.append(word)
-
-	# 	orderedTags.append(t)
-
 	global currentQuestion
 	global currentTheme
 	# for i in range(0, len(questionSet)):
@@ -67,7 +54,7 @@ def checkFollowUp(tagList):
 		#yes/no questions look for affirmative or negative responses and respond accordingly
 		elif followUpType == 'yesno':
 			# response = str(raw_input('yes no question >'))
-			if 'short' in tagList[1]: #FIX THIS, you need affirmative and negative dictionaries
+			if 'yes' in tagList[1]: #FIX THIS, you need affirmative and negative dictionaries
 				if questionSet[currentQuestion][3] != '':
 					for j in range(0, len(questionSet)):
 						if questionSet[currentQuestion][3] == questionSet[j][1]:
@@ -127,7 +114,7 @@ def speak(number):
 
 	with open(savedFile, "a") as toSave:
 		toSave.write('\n')
-		toSave.write('Question: ' + questionSet[number][0])
+		toSave.write('Question generated: ' + questionSet[number][0])
 		toSave.write('\n')
 
 	question = questionSet[number]
@@ -171,6 +158,7 @@ def speak(number):
 		msg.append("End now")
 	else:
 		msg.append("Listen now")
+		msg.append(questionSet[number][0])
 	
 	client.send(msg)
 	print "Closing OSC"
@@ -183,6 +171,33 @@ def getKey(item):
 def returnQuestion(tagList):
 
 	global currentTheme
+	print currentTheme
+	print "tags collected: " + str(tagList)
+
+	beginThemes = ['intro', 'warmup', 'gettingwarmer', 'aboutyou']
+
+	#replacing all "current" indicators with the current theme
+	indices = [i for i, x in enumerate(tagList[1]) if x == "current"]
+
+	if currentTheme not in beginThemes:
+		for i in indices:
+			tagList[1][i] = currentTheme
+		print "new tag list: " + str(tagList)
+
+	else:
+		randTheme = randrange(0, len(terms))
+		currentTheme = terms[randTheme]
+
+		print "new theme: " + currentTheme
+
+		for i in indices:
+			tagList[1][i] = currentTheme
+		print "new tag list: " + str(tagList)
+
+	with open(savedFile, "a") as toSave:
+		toSave.write('\n')
+		toSave.write('Tags collected: ' + str(tagList))
+		toSave.write('\n')
 
 	#integrate "notfirst" and "escapehatch" tags in here
 	print "returning a question!"
@@ -195,25 +210,26 @@ def returnQuestion(tagList):
 
 	if len(tagList[0]) > 0:
 		for word in tagList[0]:
-			print word
+			if word != '':
+				print word
 
-			for q in questionSet:
-				if q[len(q) - 1] != "used":
-					if len(q) > 8 and q[6] != 'followup':
-						for i in range (8, len(q)):
-							if word == q[i]:
-								if len(selection) == 0:
-									print "Adding " + q[1] + " for the first time!"
-									selection.append([q, 0])
-								else:
-									for s in selection:
-										if s[0][0] == q[0]:
-											print q[1] + "is already there!"
-											s[1] += 1
-											break
-										else:
-											print "Adding " + q[1] + " to the choices!"
-											selection.append([q, 0])
+				for q in questionSet:
+					if q[len(q) - 1] != "used":
+						if len(q) > 8 and q[6] != 'followup':
+							for i in range (8, len(q)):
+								if word == q[i]:
+									if len(selection) == 0:
+										print "Adding " + q[1] + " for the first time!"
+										selection.append([q, 0])
+									else:
+										for s in selection:
+											if s[0][0] == q[0]:
+												print q[1] + "is already there!"
+												s[1] += 1
+												break
+											else:
+												print "Adding " + q[1] + " to the choices!"
+												selection.append([q, 0])
 
 	if len(selection) > 0:
 		for s in selection:
@@ -350,10 +366,12 @@ def receive_text(addr, tags, stuff, source):
 
     # print tags
 	if "intro" in tags[1]:
+		for q in questionSet:
+			if q[len(q)-1] == 'used':
+				print q
+				q.remove(q[len(q)-1])
 		savedFile = tags[1][1]
 		returnQuestion([[],["intro"]])
-	elif "end" in tags[1]:
-		returnQuestion([[], ["end"]])
 	else:
 		checkFollowUp(tags)
 
