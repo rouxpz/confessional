@@ -176,24 +176,6 @@ def returnQuestion(tagList):
 
 	beginThemes = ['intro', 'warmup', 'gettingwarmer', 'aboutyou']
 
-	#replacing all "current" indicators with the current theme
-	indices = [i for i, x in enumerate(tagList[1]) if x == "current"]
-
-	if currentTheme not in beginThemes:
-		for i in indices:
-			tagList[1][i] = currentTheme
-		print "new tag list: " + str(tagList)
-
-	else:
-		randTheme = randrange(0, len(terms))
-		currentTheme = terms[randTheme]
-
-		print "new theme: " + currentTheme
-
-		for i in indices:
-			tagList[1][i] = currentTheme
-		print "new tag list: " + str(tagList)
-
 	with open(savedFile, "a") as toSave:
 		toSave.write('\n')
 		toSave.write('Tags collected: ' + str(tagList))
@@ -241,52 +223,47 @@ def returnQuestion(tagList):
 			if o[1] == ordered[0][1]:
 				print "Highest score: " + o[0][0]
 				narrowed.append(o[0])
+	# else:
+	# 	tagList[1].append(currentTheme)
+	# 	return
 
 	if len(narrowed) == 1:
 		print narrowed
 		final.append(narrowed[0])
 	elif len(narrowed) > 1:
-		print "Choosing from tags"
-		# print narrowed
-		# go through tags to find matches
-		for t in tagList[1]:
-			# print t
-			for n in narrowed:
-				# print n
-				if n[6] != 'followup':
-					for i in range(5, 8):
-						if n[i] == t:
-							print n[0]
-							final.append(n)
-	elif len(narrowed) == 0:
-		print "Choosing from tags"
-		# go through tags to find matches
-		for t in tagList[1]:
-			# print t
-			for q in questionSet:
-				if q[len(q)-1] != "used" and 'followup' not in q:
+		if len(tagList[1]) > 0:
+			print "Choosing from tags"
+			# print narrowed
+			# go through tags to find matches
+			for t in tagList[1]:
+				# print t
+				for n in narrowed:
+					# print n
+					# if 'followup' not in n:
+					if t in n:
+						final.append(n)
 
-					for i in range(5, len(q)):
-						if q[i] == t:
+	elif len(narrowed) == 0:
+		if len(tagList[1]) > 0:
+			print "Choosing from tags"
+			# go through tags to find matches
+			for t in tagList[1]:
+				# print t
+				for q in questionSet:
+					if q[len(q)-1] != "used" and 'followup' not in q:
+
+						if t in q:
 							print q[0]
 							final.append(q)
 
 	# print final
 
-	if len(final) > 1:
-		rand = randrange(0, len(final))
-		print "index chosen: " + str(rand)
-		chosenQuestion = final[rand]
-		print chosenQuestion
-	elif len(final) == 1:
-		chosenQuestion = final[0]
-		print chosenQuestion
-	elif len(final) < 1 and len(narrowed) > 1:
+	if len(final) < 1 and len(narrowed) > 1:
 		# print "elaboration needed"
 		rand = randrange(0, len(narrowed))
 		print "index chosen: " + str(rand)
 		chosenQuestion = narrowed[rand]
-	else:
+	elif len(final) < 1:
 		if questionSet[currentQuestion][5] == 'intro':
 			returnQuestion([[], ['warmup']])
 			return
@@ -297,10 +274,28 @@ def returnQuestion(tagList):
 			returnQuestion([[], ['aboutyou']])
 			return
 		else:
+			#replacing all "current" indicators with the current theme
+			indices = [i for i, x in enumerate(tagList[1]) if x == "current"]
+
+			if currentTheme not in beginThemes:
+				for i in indices:
+					tagList[1][i] = currentTheme
+				print "new tag list: " + str(tagList)
+
+			else:
+				randTheme = randrange(0, len(terms))
+				currentTheme = terms[randTheme]
+
+				print "new theme: " + currentTheme
+
+				for i in indices:
+					tagList[1][i] = currentTheme
+				print "new tag list: " + str(tagList)
+
 			#if nothing is found from terms, continue on current theme tag until no more questions remain, then shift to new theme with "escapehatch"
 			themeUnused = []
 			for q in questionSet:
-				if q[len(q) - 1] != 'used' and q[5] == currentTheme:
+				if q[len(q) - 1] != 'used' and currentTheme in q:
 					themeUnused.append(q)
 			if len(themeUnused) > 0:
 				returnQuestion([[], [currentTheme]])
@@ -314,12 +309,19 @@ def returnQuestion(tagList):
 				newTerm = terms[randIndex]
 				
 				for q in questionSet:
-					if q[5] == newTerm and q[7] == 'escapehatch':
+					if newTerm in q and 'escapehatch' in q:
 						escapeQuestions.append(q)
 
 				newQuestion = randrange(0, len(escapeQuestions))
 				chosenQuestion = escapeQuestions[newQuestion]
-
+	elif len(final) > 1:
+		rand = randrange(0, len(final))
+		print "index chosen: " + str(rand)
+		chosenQuestion = final[rand]
+		print chosenQuestion
+	elif len(final) == 1:
+		chosenQuestion = final[0]
+		print chosenQuestion
 
 	for q in questionSet:
 		if chosenQuestion[1] == q[1]:

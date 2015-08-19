@@ -8,8 +8,8 @@ import OSC, threading
 from OSC import OSCClient, OSCMessage
 
 #TODO 8/19/15
-#1 - confidence score for pocketsphinx
-#2 - map confidence score to stalling/speak clearer questions
+#1 - confidence score for pocketsphinx (?)
+#2 - map length of answers to stalling/speak clearer questions
 #3 - pattern integration for grammatical purposes
 
 #define pocketsphinx language and acoustic models
@@ -31,7 +31,7 @@ config = Decoder.default_config()
 config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
-config.set_float('-vad_threshold',2.0)
+config.set_float('-vad_threshold',2.5)
 config.set_int('-vad_postspeech', 200)
 
 decoder = Decoder(config)
@@ -62,6 +62,7 @@ emotions = []
 def waitingPeriod():
 
 	#waits for indication to start -- key press for now, will likely be replaced by a sensor
+	global sessionTime
 	global savedSessionTime
 	global savedFile
 
@@ -163,7 +164,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=0,
+				input_device_index=3,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -248,7 +249,7 @@ def listen():
 					sys.stdout.flush()
 					print decoder.get_in_speech()
 
-				elif decoder.get_in_speech() == False and passedTime > 5:
+				elif decoder.get_in_speech() == False and passedTime > 4:
 
 					#finishing up the response
 					if text != '':
@@ -301,7 +302,7 @@ def listen():
 
 					msg = OSCMessage()
 					msg.setAddress("/print")
-					if sessionTime <= 30: #if we've still got time
+					if sessionTime <= 1800: #if we've still got time
 						msg.append(totalTags[0])
 						msg.append('*')
 						msg.append(totalTags[1])
