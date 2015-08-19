@@ -73,6 +73,7 @@ def waitingPeriod():
 		client = OSCClient()
 		client.connect( ("localhost", 9000) )
 		sessionTime = 0
+		print "new session time: " + str(sessionTime)
 		savedSessionTime = time.time()
 		savedFile = "transcript" + str(savedSessionTime) + ".txt"
 
