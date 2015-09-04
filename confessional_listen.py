@@ -45,6 +45,7 @@ lastSavedTime = time.time()
 text = ''
 savedFile = ''
 toAnswer = ''
+pauseLength = 0
 
 #global list to hold the total tags for each response
 totalTags = []
@@ -142,8 +143,24 @@ def searchWords(sentence):
 #computer listening to what you say
 def listen():
 
-	global sessionTime, toAnswer
+	global sessionTime, toAnswer, pauseLength
 	print "question to answer: " + toAnswer
+
+	for q in questionSet:
+		if toAnswer in q:
+			print q
+			if 'intro' in q:
+				pauseLength = 0
+			elif 'warmup' in q:
+				pauseLength = 1
+			elif 'gettingwarmer' in q:
+				pauseLength = 1
+			elif 'aboutyou' in q:
+				pauseLength = 2
+			else:
+				pauseLength = 3
+
+	print "pause length: " + str(pauseLength)
 	toAnswer = toAnswer.replace('...', ' ').replace('.', '').replace('?', '').replace('!', '').lower()
 	questionWords = toAnswer.split(' ')
 	print questionWords
@@ -165,7 +182,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=3,
+				input_device_index=0,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -250,7 +267,7 @@ def listen():
 					sys.stdout.flush()
 					print decoder.get_in_speech()
 
-				elif decoder.get_in_speech() == False and passedTime > 4:
+				elif decoder.get_in_speech() == False and passedTime > pauseLength:
 
 					#finishing up the response
 					if text != '':
