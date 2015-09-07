@@ -11,6 +11,7 @@ text = ''
 savedFile = ''
 
 terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong"]
+stallers = ['staller1', 'staller2', 'staller3', 'staller4', 'doinggreat']
 termsUnused = terms
 
 s = OSC.OSCServer( ("localhost", 9000) )
@@ -29,6 +30,25 @@ print "Questions loaded!"
 
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
+
+	if 'staller' in tagList[1]:
+		print stallers
+		chosenNumber = 0
+
+		rand = randrange(0, len(stallers))
+		print rand
+		chosenStaller = stallers[rand]
+		print chosenStaller
+
+		for q in questionSet:
+			if chosenStaller == q[1]:
+				print q[0]
+				chosenNumber = questionSet.index(q)
+
+		speak(chosenNumber)
+		stallers.remove(chosenStaller)
+		print stallers
+		time.sleep(1)
 
 	orderedTags = []
 	tempQuestion = 0
@@ -147,22 +167,23 @@ def speak(number):
 
 	print "current question: " + str(number) + " " + questionSet[number][0]
 
-	#send data out via OSC to let the other program know to start listening
-	print "Opening OSC"
-	client = OSCClient()
-	client.connect(("localhost", 8001))
-	msg = OSCMessage()
-	msg.setAddress("/print")
+	if 'staller' not in question:
+		#send data out via OSC to let the other program know to start listening
+		print "Opening OSC"
+		client = OSCClient()
+		client.connect(("localhost", 8001))
+		msg = OSCMessage()
+		msg.setAddress("/print")
 
-	if 'end' in questionSet[number] and 'followup' in questionSet[number]:
-		msg.append("End now")
-	else:
-		msg.append("Listen now")
-		msg.append(questionSet[number][0])
-	
-	client.send(msg)
-	print "Closing OSC"
-	client.close()
+		if 'end' in questionSet[number] and 'followup' in questionSet[number]:
+			msg.append("End now")
+		else:
+			msg.append("Listen now")
+			msg.append(questionSet[number][0])
+		
+		client.send(msg)
+		print "Closing OSC"
+		client.close()
 
 def getKey(item):
 	return item[1]

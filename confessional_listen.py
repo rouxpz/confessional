@@ -137,7 +137,7 @@ def searchWords(sentence):
 	# 	tags[1].append('current')
 	# 	print ("elaboration necessary")
 
-	print tags
+	# print tags
 	return tags
 
 #computer listening to what you say
@@ -150,15 +150,15 @@ def listen():
 		if toAnswer in q:
 			print q
 			if 'intro' in q:
-				pauseLength = 0
-			elif 'warmup' in q:
-				pauseLength = 1
-			elif 'gettingwarmer' in q:
-				pauseLength = 1
-			elif 'aboutyou' in q:
 				pauseLength = 2
-			else:
+			elif 'warmup' in q:
 				pauseLength = 3
+			elif 'gettingwarmer' in q:
+				pauseLength = 3
+			elif 'aboutyou' in q:
+				pauseLength = 4
+			else:
+				pauseLength = 4
 
 	print "pause length: " + str(pauseLength)
 	toAnswer = toAnswer.replace('...', ' ').replace('.', '').replace('?', '').replace('!', '').lower()
@@ -175,7 +175,6 @@ def listen():
 	text = ''
 
 	p = pyaudio.PyAudio()
-	totalTime = 0
 	
 	#open pyaudio stream
 	stream = p.open(format=FORMAT,
@@ -218,35 +217,6 @@ def listen():
 						print "Elapsed time: " + str(passedTime)
 						# print text
 
-						#process input text after every 10 seconds
-						if passedTime >= 10:
-							totalTime += passedTime
-							print "total time:" + str(totalTime)
-
-							#only process newest chunk of text, rather than whole thing
-							toSplit = re.compile('%s(.*)'%savedText)
-							m = toSplit.search(text)
-							textChunk = m.group(1)
-							print "text at 10 second chunk: " + textChunk
-
-							#select tags for text chunk, and add them to the list of tags for this response
-							newTags = searchWords(textChunk)
-							
-							print len(newTags)
-							for t in newTags[0]:
-								if t != '':
-									totalTags[0].append(t)
-
-							for t in newTags[1]:
-								if t != '':
-									totalTags[1].append(t)
-
-							#reset saved text and time
-							savedText = text
-							print "saved text: " + savedText
-							lastSavedTime = time.time()
-							passedTime = 0
-
 						#looking for "silences" where there's no new speech coming in
 						if paused == text:
 							print paused
@@ -275,23 +245,17 @@ def listen():
 						searchText = text + ' ' + toAnswer
 						print "text to search: " + searchText
 
-						print "Elapsed time: " + str(passedTime)
-						totalTime += passedTime
-						print "total time: " + str(totalTime)
+						print "Total elapsed time: " + str(passedTime)
 
 						#search and tag the last chunk of text
-						toSplit = re.compile('%s(.*)'%savedText)
-						m = toSplit.search(searchText)
-						if m != None:
-							textChunk = m.group(1)
-							newTags = searchWords(textChunk)
-						else:
-							newTags = searchWords(searchText)
-						
+						# toSplit = re.compile('%s(.*)'%savedText)
+						# m = toSplit.search(searchText)
+						# if m != None:
+						# 	textChunk = m.group(1)
+						# 	newTags = searchWords(textChunk)
+						# else:
+						newTags = searchWords(searchText)
 						print len(newTags)	
-						# for t in newTags:
-						# 	# if t not in totalTags:
-						# 	totalTags.append(t)
 
 						for t in newTags[0]:
 							if t != '':
@@ -301,9 +265,11 @@ def listen():
 							if t != '':
 								totalTags[1].append(t)
 
-						if totalTime < 10:
+						if passedTime < 10:
 							totalTags[1].append('short')
 							totalTags[1].append('current')
+						elif passedTime > 15:
+							totalTags[1].append('staller')
 
 						if len(totalTags[1]) == 0:
 							totalTags[1].append('current')
@@ -372,7 +338,7 @@ def assignTerms(sentence):
 	localTags.append(specificTags)
 	localTags.append(termTags)
 
-	print localTags
+	# print localTags
 	return localTags
 
 # define a message-handler function for the server to call.
