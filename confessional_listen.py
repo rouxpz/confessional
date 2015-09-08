@@ -7,10 +7,10 @@ from pattern.en import tenses
 import OSC, threading
 from OSC import OSCClient, OSCMessage
 
-#TODO 8/19/15
+#TODO 9/7/15
 #1 - confidence score for pocketsphinx (?)
-#2 - map length of answers to stalling/speak clearer questions
-#3 - pattern integration for grammatical purposes
+#2 - pattern integration for grammatical purposes (?)
+#3 - machine learning to add words to corpus
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -53,7 +53,7 @@ sessionTime = 0
 savedSessionTime = 0
 
 #terms to select question
-terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong", "yes"]
+terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong", "yes", "skipwarmup"]
 termCatalog = []
 
 #empty list to store emotional content
@@ -148,22 +148,24 @@ def listen():
 
 	for q in questionSet:
 		if toAnswer in q:
-			print q
+			# print q
 			if 'intro' in q:
-				pauseLength = 2
+				if 'Hello5a' not in q:
+					pauseLength = 2
+				else:
+					pauseLength = 10
 			elif 'warmup' in q:
 				pauseLength = 3
 			elif 'gettingwarmer' in q:
 				pauseLength = 3
-			elif 'aboutyou' in q:
-				pauseLength = 4
 			else:
 				pauseLength = 4
 
-	print "pause length: " + str(pauseLength)
-	toAnswer = toAnswer.replace('...', ' ').replace('.', '').replace('?', '').replace('!', '').lower()
-	questionWords = toAnswer.split(' ')
-	print questionWords
+	# print "pause length: " + str(pauseLength)
+	toAnswerLower = toAnswer.replace('...', ' ').replace('.', '').replace('?', '').replace('!', '').lower()
+	print toAnswerLower
+	# questionWords = toAnswerLower.split(' ')
+	# print questionWords
 
 	print "Opening OSC"
 	client = OSCClient()
@@ -242,18 +244,11 @@ def listen():
 					#finishing up the response
 					if text != '':
 
-						searchText = text + ' ' + toAnswer
+						searchText = text + ' ' + toAnswerLower
 						print "text to search: " + searchText
 
 						print "Total elapsed time: " + str(passedTime)
 
-						#search and tag the last chunk of text
-						# toSplit = re.compile('%s(.*)'%savedText)
-						# m = toSplit.search(searchText)
-						# if m != None:
-						# 	textChunk = m.group(1)
-						# 	newTags = searchWords(textChunk)
-						# else:
 						newTags = searchWords(searchText)
 						print len(newTags)	
 
@@ -265,15 +260,16 @@ def listen():
 							if t != '':
 								totalTags[1].append(t)
 
+						#appending appropriate time passed tags
 						if passedTime < 10:
 							totalTags[1].append('short')
 							totalTags[1].append('current')
 						elif passedTime > 200:
 							totalTags[1].append('staller')
 
+
 						if len(totalTags[1]) == 0:
 							totalTags[1].append('current')
-
 
 						print "tags collected: " + str(totalTags)
 
@@ -315,6 +311,7 @@ def listen():
 
 def assignTerms(sentence):
 
+	global toAnswer
 	#assigning tags based on terms in corpus
 	localTags = []
 	specificTags = []
@@ -329,11 +326,17 @@ def assignTerms(sentence):
 					specificTags.append(q[i])
 
 	for t in termCatalog:
-		toSearch = r'\b' + re.escape(t[0]) + r'\b'
-		w = re.search(toSearch, sentence)
-		if w != None:
-			print t[1] + " found, using " + t[0]
-			termTags.append(t[1])
+		if 'skipwarmup' not in t:
+			toSearch = r'\b' + re.escape(t[0]) + r'\b'
+			w = re.search(toSearch, sentence)
+			if w != None:
+				print t[1] + " found, using " + t[0]
+				termTags.append(t[1])
+		elif 'skipwarmup' in t:
+			for q in questionSet:
+				if toAnswer in q and 'intro' in q:
+					termTags.append(t[1])
+
 
 	localTags.append(specificTags)
 	localTags.append(termTags)
@@ -362,7 +365,6 @@ def receive_text(addr, tags, stuff, source):
 		listen()
 	else:
 		waitingPeriod()
-    # typeResponse()
 
 ##### MAIN SCRIPT #####
 #load questions
