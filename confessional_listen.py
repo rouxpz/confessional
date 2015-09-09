@@ -184,7 +184,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=2,
+				input_device_index=0,
 				frames_per_buffer=1024)
 
 	stream.start_stream()

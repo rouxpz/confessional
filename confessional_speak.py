@@ -9,6 +9,7 @@ questionCount = 0
 notFirst = False
 text = ''
 savedFile = ''
+introQuestion = False
 
 terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong"]
 stallers = ['staller1', 'staller2', 'staller3', 'staller4', 'doinggreat']
@@ -191,8 +192,8 @@ def getKey(item):
 #selecting a question to return to participant
 def returnQuestion(tagList):
 
-	global currentTheme
-	print currentTheme
+	global currentTheme, introQuestion
+	print currentTheme + ", " + str(questionSet[currentQuestion])
 	print "tags collected: " + str(tagList)
 
 	beginThemes = ['intro', 'warmup', 'gettingwarmer', 'aboutyou']
@@ -211,144 +212,154 @@ def returnQuestion(tagList):
 	score = 0
 	chosenQuestion = ''
 
-	if len(tagList[0]) > 0:
-		for word in tagList[0]:
-			if word != '':
-				print word
-
-				for q in questionSet:
-					if q[len(q) - 1] != "used":
-						if len(q) > 8 and q[6] != 'followup':
-							for i in range (8, len(q)):
-								if word == q[i]:
-									if len(selection) == 0:
-										print "Adding " + q[1] + " for the first time!"
-										selection.append([q, 0])
-									else:
-										for s in selection:
-											if s[0][0] == q[0]:
-												print q[1] + "is already there!"
-												s[1] += 1
-												break
-											else:
-												print "Adding " + q[1] + " to the choices!"
-												selection.append([q, 0])
-
-	if len(selection) > 0:
-		for s in selection:
-			print s[0][0] + " used " + str(s[1]) + " times"
-
-		ordered = sorted(selection, key=getKey, reverse = True)
-
-		for o in ordered:
-			if o[1] == ordered[0][1]:
-				print "Highest score: " + o[0][0]
-				narrowed.append(o[0])
-	# else:
-	# 	tagList[1].append(currentTheme)
-	# 	return
-
-	if len(narrowed) == 1:
-		print narrowed
-		final.append(narrowed[0])
-	elif len(narrowed) > 1:
-		if len(tagList[1]) > 0:
-			print "Choosing from tags"
-			# print narrowed
-			# go through tags to find matches
-			for t in tagList[1]:
-				# print t
-				for n in narrowed:
-					# print n
-					# if 'followup' not in n:
-					if t in n:
-						final.append(n)
-
-	elif len(narrowed) == 0:
-		if len(tagList[1]) > 0:
-			print "Choosing from tags"
-			# go through tags to find matches
-			for t in tagList[1]:
-				# print t
-				for q in questionSet:
-					if q[len(q)-1] != "used" and 'followup' not in q:
-
-						if t in q:
-							print q[0]
-							final.append(q)
-
-	# print final
-
-	if len(final) < 1 and len(narrowed) > 1:
-		# print "elaboration needed"
-		rand = randrange(0, len(narrowed))
-		print "index chosen: " + str(rand)
-		chosenQuestion = narrowed[rand]
-	elif len(final) < 1:
-		if questionSet[currentQuestion][5] == 'intro':
+	if introQuestion == True:
+		if 'skipwarmup' not in tagList[1]:
+			print "returning a warmup"
+			introQuestion = False
 			returnQuestion([[], ['warmup']])
 			return
-		elif questionSet[currentQuestion][5] == 'warmup':
-			returnQuestion([[], ['gettingwarmer']])
-			return
-		elif questionSet[currentQuestion][5] == 'gettingwarmer':
-			returnQuestion([[], ['aboutyou']])
-			return
-		else:
-			#replacing all "current" indicators with the current theme
-			indices = [i for i, x in enumerate(tagList[1]) if x == "current"]
 
-			if currentTheme not in beginThemes:
-				for i in indices:
-					tagList[1][i] = currentTheme
-				print "new tag list: " + str(tagList)
+	else:
+		print "returning a regular question"
+		if len(tagList[0]) > 0:
+			for word in tagList[0]:
+				if word != '':
+					print word
 
-			else:
-				randTheme = randrange(0, len(terms))
-				currentTheme = terms[randTheme]
+					for q in questionSet:
+						if q[len(q) - 1] != "used":
+							if len(q) > 8 and q[6] != 'followup':
+								for i in range (8, len(q)):
+									if word == q[i]:
+										if len(selection) == 0:
+											print "Adding " + q[1] + " for the first time!"
+											selection.append([q, 0])
+										else:
+											for s in selection:
+												if s[0][0] == q[0]:
+													print q[1] + "is already there!"
+													s[1] += 1
+													break
+												else:
+													print "Adding " + q[1] + " to the choices!"
+													selection.append([q, 0])
 
-				print "new theme: " + currentTheme
+		if len(selection) > 0:
+			for s in selection:
+				print s[0][0] + " used " + str(s[1]) + " times"
 
-				for i in indices:
-					tagList[1][i] = currentTheme
-				print "new tag list: " + str(tagList)
+			ordered = sorted(selection, key=getKey, reverse = True)
 
-			#if nothing is found from terms, continue on current theme tag until no more questions remain, then shift to new theme with "escapehatch"
-			themeUnused = []
-			for q in questionSet:
-				if q[len(q) - 1] != 'used' and currentTheme in q:
-					themeUnused.append(q)
-			if len(themeUnused) > 0:
-				returnQuestion([[], [currentTheme]])
+			for o in ordered:
+				if o[1] == ordered[0][1]:
+					print "Highest score: " + o[0][0]
+					narrowed.append(o[0])
+		# else:
+		# 	tagList[1].append(currentTheme)
+		# 	return
+
+		if len(narrowed) == 1:
+			print narrowed
+			final.append(narrowed[0])
+		elif len(narrowed) > 1:
+			if len(tagList[1]) > 0:
+				print "Choosing from tags"
+				# print narrowed
+				# go through tags to find matches
+				for t in tagList[1]:
+					# print t
+					for n in narrowed:
+						# print n
+						# if 'followup' not in n:
+						if t in n:
+							final.append(n)
+
+		elif len(narrowed) == 0:
+			if len(tagList[1]) > 0:
+				print "Choosing from tags"
+				# go through tags to find matches
+				for t in tagList[1]:
+					# print t
+					for q in questionSet:
+						if q[len(q)-1] != "used" and 'followup' not in q:
+
+							if t in q:
+								print q[0]
+								final.append(q)
+
+		# print final
+
+		if len(final) < 1 and len(narrowed) > 1:
+			# print "elaboration needed"
+			rand = randrange(0, len(narrowed))
+			print "index chosen: " + str(rand)
+			chosenQuestion = narrowed[rand]
+		elif len(final) < 1:
+			if questionSet[currentQuestion][5] == 'intro':
+				returnQuestion([[], ['warmup']])
+				return
+			elif questionSet[currentQuestion][5] == 'warmup':
+				returnQuestion([[], ['gettingwarmer']])
+				return
+			elif questionSet[currentQuestion][5] == 'gettingwarmer':
+				returnQuestion([[], ['aboutyou']])
 				return
 			else:
-				escapeQuestions = []
-				for t in termsUnused:
-					if t == currentTheme:
-						termsUnused.remove(t)
-				randIndex = randrange(0, len(termsUnused))
-				newTerm = terms[randIndex]
-				
+				#replacing all "current" indicators with the current theme
+				indices = [i for i, x in enumerate(tagList[1]) if x == "current"]
+
+				if currentTheme not in beginThemes:
+					for i in indices:
+						tagList[1][i] = currentTheme
+					print "new tag list: " + str(tagList)
+
+				else:
+					randTheme = randrange(0, len(terms))
+					currentTheme = terms[randTheme]
+
+					print "new theme: " + currentTheme
+
+					for i in indices:
+						tagList[1][i] = currentTheme
+					print "new tag list: " + str(tagList)
+
+				#if nothing is found from terms, continue on current theme tag until no more questions remain, then shift to new theme with "escapehatch"
+				themeUnused = []
 				for q in questionSet:
-					if newTerm in q and 'escapehatch' in q:
-						escapeQuestions.append(q)
+					if q[len(q) - 1] != 'used' and currentTheme in q:
+						themeUnused.append(q)
+				if len(themeUnused) > 0:
+					returnQuestion([[], [currentTheme]])
+					return
+				else:
+					escapeQuestions = []
+					for t in termsUnused:
+						if t == currentTheme:
+							termsUnused.remove(t)
+					randIndex = randrange(0, len(termsUnused))
+					newTerm = terms[randIndex]
+					
+					for q in questionSet:
+						if newTerm in q and 'escapehatch' in q:
+							escapeQuestions.append(q)
 
-				newQuestion = randrange(0, len(escapeQuestions))
-				chosenQuestion = escapeQuestions[newQuestion]
-	elif len(final) > 1:
-		rand = randrange(0, len(final))
-		print "index chosen: " + str(rand)
-		chosenQuestion = final[rand]
-		print chosenQuestion
-	elif len(final) == 1:
-		chosenQuestion = final[0]
-		print chosenQuestion
+					newQuestion = randrange(0, len(escapeQuestions))
+					chosenQuestion = escapeQuestions[newQuestion]
+		elif len(final) > 1:
+			rand = randrange(0, len(final))
+			print "index chosen: " + str(rand)
+			chosenQuestion = final[rand]
+			print chosenQuestion
+		elif len(final) == 1:
+			chosenQuestion = final[0]
+			print chosenQuestion
 
-	for q in questionSet:
-		if chosenQuestion[1] == q[1]:
-			print q[1] + " has been used"
-			q.append("used")
-			print q
+		for q in questionSet:
+			if chosenQuestion[1] == q[1]:
+				print q[1] + " has been used"
+				q.append("used")
+				print q
+
 	
 	# modify current question variable to eventually see if there's a tied in follow up
 	global currentQuestion
@@ -366,6 +377,10 @@ def returnQuestion(tagList):
 
 	try:
 		speak(currentQuestion)
+		if 'intro' in questionSet[currentQuestion]:
+			introQuestion = True
+		else:
+			introQuestion = False
 	except IOError:
 		pass
 
@@ -373,7 +388,7 @@ def returnQuestion(tagList):
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
 
-	global savedFile
+	global savedFile, introQuestion
 
 	print "---"
 	print "received new osc msg from %s" % OSC.getUrlStr(source)
@@ -394,6 +409,7 @@ def receive_text(addr, tags, stuff, source):
 				print q
 				q.remove(q[len(q)-1])
 		savedFile = tags[1][1]
+		# introQuestion = True
 		returnQuestion([[],["intro"]])
 	else:
 		checkFollowUp(tags)
