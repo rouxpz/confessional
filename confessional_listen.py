@@ -11,6 +11,7 @@ from OSC import OSCClient, OSCMessage
 #1 - confidence score for pocketsphinx (?)
 #2 - pattern integration for grammatical purposes (?)
 #3 - machine learning to add words to corpus
+#4 - add emotional content back in
 
 #define pocketsphinx language and acoustic models
 lm = 'files/en-70k-0.1.lm'
@@ -326,16 +327,17 @@ def assignTerms(sentence):
 					specificTags.append(q[i])
 
 	for t in termCatalog:
-		if 'skipwarmup' not in t:
-			toSearch = r'\b' + re.escape(t[0]) + r'\b'
-			w = re.search(toSearch, sentence)
-			if w != None:
+		toSearch = r'\b' + re.escape(t[0]) + r'\b'
+		w = re.search(toSearch, sentence)
+		if w != None:
+			if t[1] == 'skipwarmup':
+				for q in questionSet:
+					if toAnswer in q and 'intro' in q:
+						termTags.append(t[1])
+			else:
 				print t[1] + " found, using " + t[0]
 				termTags.append(t[1])
-		elif 'skipwarmup' in t:
-			for q in questionSet:
-				if toAnswer in q and 'intro' in q:
-					termTags.append(t[1])
+			
 
 
 	localTags.append(specificTags)
