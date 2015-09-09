@@ -31,7 +31,7 @@ print "Questions loaded!"
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
 
-	if 'staller' in tagList[1]:
+	if 'staller' in tagList[1] and len(stallers) > 0:
 		print stallers
 		chosenNumber = 0
 
