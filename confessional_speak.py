@@ -218,6 +218,9 @@ def returnQuestion(tagList):
 			introQuestion = False
 			returnQuestion([[], ['warmup']])
 			return
+		else:
+			introQuestion = False
+			returnQuestion(tagList)
 
 	else:
 		print "returning a regular question"

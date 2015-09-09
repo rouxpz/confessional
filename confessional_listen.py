@@ -32,7 +32,7 @@ config = Decoder.default_config()
 config.set_string('-lm', lm)
 config.set_string('-hmm', hmm)
 config.set_string('-dict', dic)
-config.set_float('-vad_threshold',2.5)
+config.set_float('-vad_threshold',2.0)
 config.set_int('-vad_postspeech', 200)
 
 decoder = Decoder(config)
