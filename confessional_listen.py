@@ -158,9 +158,11 @@ def listen():
 			elif 'warmup' in q:
 				pauseLength = 3
 			elif 'gettingwarmer' in q:
-				pauseLength = 3
-			else:
 				pauseLength = 4
+			elif 'notfirst' in q:
+				pauseLength = 10
+			else:
+				pauseLength = 5
 
 	# print "pause length: " + str(pauseLength)
 	toAnswerLower = toAnswer.replace('...', ' ').replace('.', '').replace('?', '').replace('!', '').lower()

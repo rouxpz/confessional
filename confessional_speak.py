@@ -5,7 +5,9 @@ from OSC import OSCClient, OSCMessage
 questionSet = []
 currentQuestion = 0
 currentTheme = ''
+prevTheme = ''
 questionCount = 0
+themeCount = 0
 notFirst = False
 text = ''
 savedFile = ''
@@ -192,7 +194,7 @@ def getKey(item):
 #selecting a question to return to participant
 def returnQuestion(tagList):
 
-	global currentTheme, introQuestion
+	global currentTheme, introQuestion, prevTheme
 	print currentTheme + ", " + str(questionSet[currentQuestion])
 	print "tags collected: " + str(tagList)
 
@@ -293,10 +295,17 @@ def returnQuestion(tagList):
 		# print final
 
 		if len(final) < 1 and len(narrowed) > 1:
+
+			if notFirst == False:
+				for n in narrowed:
+					if 'notfirst' in f:
+						narrowed.remove(n)
+				notFirst = True
 			# print "elaboration needed"
 			rand = randrange(0, len(narrowed))
 			print "index chosen: " + str(rand)
 			chosenQuestion = narrowed[rand]
+
 		elif len(final) < 1:
 			if questionSet[currentQuestion][5] == 'intro':
 				returnQuestion([[], ['warmup']])
@@ -331,7 +340,7 @@ def returnQuestion(tagList):
 				for q in questionSet:
 					if q[len(q) - 1] != 'used' and currentTheme in q:
 						themeUnused.append(q)
-				if len(themeUnused) > 0:
+				if len(themeUnused) > 0 and themeCount <= 3:
 					returnQuestion([[], [currentTheme]])
 					return
 				else:
@@ -340,7 +349,9 @@ def returnQuestion(tagList):
 						if t == currentTheme:
 							termsUnused.remove(t)
 					randIndex = randrange(0, len(termsUnused))
-					newTerm = terms[randIndex]
+					newTerm = termsUnused[randIndex]
+					themeCount = 0
+					notFirst = False
 					
 					for q in questionSet:
 						if newTerm in q and 'escapehatch' in q:
@@ -348,11 +359,20 @@ def returnQuestion(tagList):
 
 					newQuestion = randrange(0, len(escapeQuestions))
 					chosenQuestion = escapeQuestions[newQuestion]
+
 		elif len(final) > 1:
+
+			# if notFirst == False:
+			# 	for f in final:
+			# 		if 'notfirst' in f:
+			# 			final.remove(f)
+			# 	notFirst = True
+
 			rand = randrange(0, len(final))
 			print "index chosen: " + str(rand)
 			chosenQuestion = final[rand]
 			print chosenQuestion
+		
 		elif len(final) == 1:
 			chosenQuestion = final[0]
 			print chosenQuestion
@@ -367,9 +387,17 @@ def returnQuestion(tagList):
 	# modify current question variable to eventually see if there's a tied in follow up
 	global currentQuestion
 	currentQuestion = questionSet.index(chosenQuestion)
+	prevTheme = currentTheme
 	currentTheme = chosenQuestion[5]
 	print "Current Question: " + str(currentQuestion)
 	print "Current Theme: " + currentTheme
+
+	global themeCount
+	if prevTheme != currentTheme:
+		themeCount = 0
+		notFirst = False
+	else:
+		themeCount += 1
 
 	global questionCount
 	questionCount += 1
