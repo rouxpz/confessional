@@ -5,6 +5,7 @@ from pocketsphinx import *
 from random import randrange
 from pattern.en import tenses
 import OSC, threading
+from threading import Thread
 from OSC import OSCClient, OSCMessage
 
 #TODO 9/7/15
@@ -26,6 +27,9 @@ RATE = 16000
 
 s = OSC.OSCServer( ("localhost", 8001) )
 s.addDefaultHandlers()
+
+g = OSC.OSCServer( ("localhost", 8080) )
+g.addDefaultHandlers()
 
 # establish pocketsphinx configuration
 config = Decoder.default_config()
@@ -52,6 +56,7 @@ pauseLength = 0
 totalTags = []
 sessionTime = 0
 savedSessionTime = 0
+start = False
 
 #terms to select question
 terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong", "yes", "skipwarmup"]
@@ -60,6 +65,10 @@ termCatalog = []
 #empty list to store emotional content
 emotions = []
 
+#variable to store manual override theme
+themeOverride = ''
+prevThemeOverride = ''
+
 #waiting period to open the program
 def waitingPeriod():
 
@@ -67,10 +76,9 @@ def waitingPeriod():
 	global sessionTime
 	global savedSessionTime
 	global savedFile
+	global start
 
-	start = int(raw_input('>'))
-
-	if start == 0:
+	if start == True:
 		print "Opening OSC"
 		client = OSCClient()
 		client.connect( ("localhost", 9000) )
@@ -89,11 +97,12 @@ def waitingPeriod():
 		client.send(msg)
 		print "Closing OSC"
 		client.close()
+		start = False
 		return
 
 	else:
-		print "Sorry, wrong key"
-		waitingPeriod()
+		print "Waiting for a new confession"
+		# waitingPeriod()
 
 #searching input phrase with regular expressions & emotional lexicon
 def searchWords(sentence):
@@ -144,7 +153,8 @@ def searchWords(sentence):
 #computer listening to what you say
 def listen():
 
-	global sessionTime, toAnswer, pauseLength
+	global sessionTime, toAnswer, pauseLength, themeOverride, prevThemeOverride
+	print "theme override: " + themeOverride
 	print "question to answer: " + toAnswer
 
 	for q in questionSet:
@@ -174,6 +184,9 @@ def listen():
 	client = OSCClient()
 	client.connect( ("localhost", 9000) )
 
+	client2 = OSCClient()
+	client2.connect( ("localhost", 9001) )
+
 	totalTags = [[], []]
 	print totalTags
 
@@ -186,7 +199,7 @@ def listen():
 				channels=CHANNELS,
 				rate=RATE,
 				input=True,
-				input_device_index=0,
+				input_device_index=1,
 				frames_per_buffer=1024)
 
 	stream.start_stream()
@@ -230,6 +243,11 @@ def listen():
 							silence = 0
 
 						paused = text
+
+						m = OSCMessage()
+						m.setAddress("/print")
+						m.append(text)
+						client2.send(m)
 
 					else:
 						print "BLANK"
@@ -286,16 +304,25 @@ def listen():
 					msg = OSCMessage()
 					msg.setAddress("/print")
 					if sessionTime <= 1800: #if we've still got time
-						msg.append(totalTags[0])
-						msg.append('*')
-						msg.append(totalTags[1])
-						print "message to send: " + str(msg)
+						if themeOverride != prevThemeOverride:
+							msg.append('')
+							msg.append('*')
+							msg.append(themeOverride)
+							print str(msg)
+							print "MANUALLY OVERRIDDEN"
+						else:
+							msg.append(totalTags[0])
+							msg.append('*')
+							msg.append(totalTags[1])
+							print "message to send: " + str(msg)
 					else: #otherwise, if we've gone for half an hour
 						msg.append('')
 						msg.append('*')
 						msg.append('end')
 					client.send(msg)
 					client.close()
+					client2.close()
+					prevThemeOverride = themeOverride
 					print "Closed OSC"
 					break
 
@@ -351,7 +378,7 @@ def assignTerms(sentence):
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
 
-	global sessionTime, savedSessionTime, toAnswer
+	global sessionTime, savedSessionTime, toAnswer, start
 
 	print "---"
 	print "received new osc msg from %s" % OSC.getUrlStr(source)
@@ -368,7 +395,26 @@ def receive_text(addr, tags, stuff, source):
 		print "total session time: " + str(sessionTime)
 		listen()
 	else:
+		start = False
 		waitingPeriod()
+
+def receive_gui(addr, tags, stuff, source):
+	global themeOverride, prevThemeOverride, start
+
+	print "----"
+	print "received new osc msg from %s" % OSC.getUrlStr(source)
+	print "with addr : %s" % addr
+	print "typetags %s" % tags
+	print "data %s" % stuff
+	print "---"
+
+	if stuff[0] == 'start':
+		start = True
+		waitingPeriod()
+	else:
+		themeOverride = stuff[0]
+		print themeOverride
+		print prevThemeOverride
 
 ##### MAIN SCRIPT #####
 #load questions
@@ -411,14 +457,17 @@ for term in terms:
 # print termCatalog
 print "Terms sorted!"
 
-s.addMsgHandler("/print", receive_text) # adding our function
-
 waitingPeriod()
 
 s.addMsgHandler("/print", receive_text) # adding our function
 print "\nStarting OSCServer. Use ctrl-C to quit."
 st = threading.Thread(target = s.serve_forever)
 st.start()
+
+g.addMsgHandler("/print", receive_gui) # adding our function
+print "\nStarting OSCServer for GUI. Use ctrl-C to quit."
+gt = threading.Thread(target = g.serve_forever)
+gt.start()
 
 try :
     while 1 :
@@ -427,6 +476,8 @@ try :
 except KeyboardInterrupt :
     print "\nClosing OSCServer."
     s.close()
+    g.close()
     print "Waiting for Server-thread to finish"
     st.join() ##!!!
+    gt.join()
     print "Done"
