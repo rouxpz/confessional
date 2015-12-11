@@ -1,3 +1,5 @@
+###LISTEN FILE USING IBM WATSON. STILL VERY MUCH IN DEVELOPMENT.###
+
 from os import system
 import re, sys, time, csv, pyaudio, wave, collections
 # from sphinxbase import *
@@ -24,8 +26,8 @@ g.addDefaultHandlers()
 #establish speech recognition configuration
 r = sr.Recognizer()
 r.pause_threshold = 0.5
-IBM_USERNAME = "eca7814c-b1b0-4537-a3f3-e7c4eb1fd4e6"
-IBM_PASSWORD = "1jiA7QTUIKxI"
+IBM_USERNAME = "USERNAME"
+IBM_PASSWORD = "PASSWORD"
 
 #initialize e'rrythang
 counted = []
