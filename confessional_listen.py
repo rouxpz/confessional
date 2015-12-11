@@ -288,7 +288,7 @@ def listen():
 						if passedTime < 10:
 							totalTags[1].append('short')
 							totalTags[1].append('current')
-						elif passedTime > 200:
+						elif passedTime > 90:
 							totalTags[1].append('staller')
 
 

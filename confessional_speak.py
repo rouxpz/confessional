@@ -16,6 +16,7 @@ introQuestion = False
 terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong"]
 stallers = ['staller1', 'staller2', 'staller3', 'staller4', 'doinggreat']
 boothQuestionsUsed = [False, False, False]
+boothQuestionCounter = [0, 0, 0]
 termsUnused = terms
 
 s = OSC.OSCServer( ("localhost", 9000) )
@@ -36,10 +37,14 @@ print "Questions loaded!"
 def checkFollowUp(tagList):
 
 	if 'booth2' in tagList[1]:
-		boothQuestionsUsed[1] = True
+		returnQuestion([[], ["booth2"]])
+		terms.append('booth2')
+		boothQuestionCounter[1] = 1
 	
 	if 'booth3' in tagList[1]:
-		boothQuestionsUsed[2] = True
+		returnQuestion([[], ["booth3"]])
+		terms.append('booth3')
+		boothQuestionCounter[2] = 1
 
 	#check staller first
 	if 'staller' in tagList[1] and len(stallers) > 0:
@@ -98,7 +103,7 @@ def checkFollowUp(tagList):
 					returnQuestion(tagList)
 
 			else:
-				if questionSet[i][4] != '':
+				if questionSet[currentQuestion][4] != '':
 					for j in range(0, len(questionSet)):
 						if questionSet[currentQuestion][4] == questionSet[j][1]:
 							print "next question: " + questionSet[j][1]
@@ -134,12 +139,21 @@ def checkFollowUp(tagList):
 				else:
 					returnQuestion(tagList)
 
-	elif True in boothQuestionsUsed:
-		for i in range(0, 3):
-			if boothQuestionsUsed[i] == True:
-				boothState = 'booth' + str(i+1)
-				returnQuestion([[], [boothState]])
-				terms.append(boothState)
+	# elif True in boothQuestionsUsed:
+	# 	for i in range(0, 3):
+	# 		if boothQuestionsUsed[i] == True and boothQuestionCounter[i] <= 3:
+	# 			boothState = 'booth' + str(i+1)
+	# 			print "returning a booth question: " + boothQuestionCounter[i] + " in " + boothState 
+	# 			print str(boothQuestionsUsed[i]) + ", " + str(boothQuestionCounter[i])
+	# 			boothQuestionCounter[i] += 1
+	# 			terms.append(boothState)
+	# 			boothQuestionsUsed[i] = False
+	# 			returnQuestion([[], [boothState]])
+	# 		elif boothQuestionCounter[i] > 3:
+	# 			print "returning to regular questions"
+	# 			rand = randrange(0, len(terms))
+	# 			newTerm = terms[rand]
+	# 			returnQuestion([[], [newTerm]])
 	#if no conditions have been met after all of that, return a question the normal way
 	else:
 		returnQuestion(tagList)
@@ -155,7 +169,7 @@ def speak(number):
 		toSave.write('\n')
 
 	question = questionSet[number]
-	filename = "files/audio files/" + str(question[1]) + ".wav"
+	filename = "/Users/tpf2/Dropbox/current booth questions/processed/" + str(question[1]) + ".wav"
 	# filename = "files/audio files/Hello6a.wav"
 	f = wave.open(filename,"rb") 
 
@@ -247,7 +261,7 @@ def returnQuestion(tagList):
 
 					for q in questionSet:
 						if q[len(q) - 1] != "used":
-							if len(q) > 8 and q[6] != 'followup':
+							if len(q) > 8 and 'followup' not in q:
 								for i in range (8, len(q)):
 									if word == q[i]:
 										if len(selection) == 0:
@@ -333,7 +347,7 @@ def returnQuestion(tagList):
 				returnQuestion([[], ['aboutyou']])
 				return
 			elif 'aboutyou' in questionSet[currentQuestion]:
-				boothQuestionsUsed[0] = True
+				# boothQuestionsUsed[0] = True
 				returnQuestion([[], ['booth1']])
 			else:
 				#replacing all "current" indicators with the current theme
@@ -435,7 +449,7 @@ def returnQuestion(tagList):
 		# 	boothQuestionsUsed[0] = False
 
 	except IOError:
-		pass
+		returnQuestion(tagList)
 
 
 # define a message-handler function for the server to call.
