@@ -15,13 +15,14 @@ introQuestion = False
 
 terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong"]
 stallers = ['staller1', 'staller2', 'staller3', 'staller4', 'doinggreat']
+boothQuestionsUsed = [False, False, False]
 termsUnused = terms
 
 s = OSC.OSCServer( ("localhost", 9000) )
 s.addDefaultHandlers()
 
 #load questions
-with open('files/questions.csv', 'rU') as f:
+with open('files/questions-test.csv', 'rU') as f:
 	reader = csv.reader(f, delimiter=",")
 	for row in reader:
 		toAdd = []
@@ -34,6 +35,13 @@ print "Questions loaded!"
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
 
+	if 'booth2' in tagList[1]:
+		boothQuestionsUsed[1] = True
+	
+	if 'booth3' in tagList[1]:
+		boothQuestionsUsed[2] = True
+
+	#check staller first
 	if 'staller' in tagList[1] and len(stallers) > 0:
 		print stallers
 		chosenNumber = 0
@@ -126,6 +134,12 @@ def checkFollowUp(tagList):
 				else:
 					returnQuestion(tagList)
 
+	elif True in boothQuestionsUsed:
+		for i in range(0, 3):
+			if boothQuestionsUsed[i] == True:
+				boothState = 'booth' + str(i+1)
+				returnQuestion([[], [boothState]])
+				terms.append(boothState)
 	#if no conditions have been met after all of that, return a question the normal way
 	else:
 		returnQuestion(tagList)
@@ -194,7 +208,7 @@ def getKey(item):
 #selecting a question to return to participant
 def returnQuestion(tagList):
 
-	global currentTheme, introQuestion, prevTheme
+	global currentTheme, introQuestion, prevTheme, notFirst
 	print currentTheme + ", " + str(questionSet[currentQuestion])
 	print "tags collected: " + str(tagList)
 
@@ -307,15 +321,20 @@ def returnQuestion(tagList):
 			chosenQuestion = narrowed[rand]
 
 		elif len(final) < 1:
-			if questionSet[currentQuestion][5] == 'intro':
+			if 'intro' in questionSet[currentQuestion]:
 				returnQuestion([[], ['warmup']])
 				return
-			elif questionSet[currentQuestion][5] == 'warmup':
+			elif 'warmup' in questionSet[currentQuestion]:
+				boothQuestionsUsed[0] = True
 				returnQuestion([[], ['gettingwarmer']])
 				return
-			elif questionSet[currentQuestion][5] == 'gettingwarmer':
+			elif 'gettingwarmer' in questionSet[currentQuestion]:
+				boothQuestionsUsed[0] = True
 				returnQuestion([[], ['aboutyou']])
 				return
+			elif 'aboutyou' in questionSet[currentQuestion]:
+				boothQuestionsUsed[0] = True
+				returnQuestion([[], ['booth1']])
 			else:
 				#replacing all "current" indicators with the current theme
 				indices = [i for i, x in enumerate(tagList[1]) if x == "current"]
@@ -408,10 +427,13 @@ def returnQuestion(tagList):
 
 	try:
 		speak(currentQuestion)
-		if 'intro' in questionSet[currentQuestion]:
-			introQuestion = True
-		else:
-			introQuestion = False
+		# if 'warmup' in questionSet[currentQuestion]:
+		# 	introQuestion = True
+		# 	boothQuestionsUsed[0] = True
+		# else:
+		# 	introQuestion = False
+		# 	boothQuestionsUsed[0] = False
+
 	except IOError:
 		pass
 

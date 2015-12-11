@@ -1,7 +1,8 @@
 from os import system
 import re, sys, time, csv, pyaudio, wave, collections
-from sphinxbase import *
-from pocketsphinx import *
+# from sphinxbase import *
+# from pocketsphinx import *
+import speech_recognition as sr
 from random import randrange
 from pattern.en import tenses
 import OSC, threading
@@ -14,32 +15,17 @@ from OSC import OSCClient, OSCMessage
 #3 - machine learning to add words to corpus
 #4 - add emotional content back in
 
-#define pocketsphinx language and acoustic models
-lm = 'files/en-70k-0.1.lm'
-hmm = 'files/cmusphinx-en-us-5.2'
-dic = 'files/cmudict-master/cmudict_SPHINX_40.dict'
-
-#define pyaudio input mic specs
-CHUNK = 1024
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-RATE = 16000
-
 s = OSC.OSCServer( ("localhost", 8001) )
 s.addDefaultHandlers()
 
 g = OSC.OSCServer( ("localhost", 8080) )
 g.addDefaultHandlers()
 
-# establish pocketsphinx configuration
-config = Decoder.default_config()
-config.set_string('-lm', lm)
-config.set_string('-hmm', hmm)
-config.set_string('-dict', dic)
-config.set_float('-vad_threshold',2.0)
-config.set_int('-vad_postspeech', 200)
-
-decoder = Decoder(config)
+#establish speech recognition configuration
+r = sr.Recognizer()
+r.pause_threshold = 0.5
+IBM_USERNAME = "eca7814c-b1b0-4537-a3f3-e7c4eb1fd4e6"
+IBM_PASSWORD = "1jiA7QTUIKxI"
 
 #initialize e'rrythang
 counted = []
@@ -58,9 +44,6 @@ sessionTime = 0
 savedSessionTime = 0
 start = False
 
-booth3 = True
-booth2 = True
-
 #terms to select question
 terms = ["belief", "childhood", "hurt", "love", "secret", "sex", "worry", "wrong", "yes", "skipwarmup"]
 termCatalog = []
@@ -75,7 +58,7 @@ prevThemeOverride = ''
 #waiting period to open the program
 def waitingPeriod():
 
-	#waits for indication to start -- press 'start' on GUI
+	#waits for indication to start -- key press for now, will likely be replaced by a sensor
 	global sessionTime
 	global savedSessionTime
 	global savedFile
@@ -155,8 +138,8 @@ def searchWords(sentence):
 
 #computer listening to what you say
 def listen():
-
-	global sessionTime, toAnswer, pauseLength, themeOverride, prevThemeOverride, booth2, booth3
+	global text
+	global sessionTime, toAnswer, pauseLength, themeOverride, prevThemeOverride
 	print "theme override: " + themeOverride
 	print "question to answer: " + toAnswer
 
@@ -193,22 +176,6 @@ def listen():
 	totalTags = [[], []]
 	print totalTags
 
-	text = ''
-
-	p = pyaudio.PyAudio()
-	
-	#open pyaudio stream
-	stream = p.open(format=FORMAT,
-				channels=CHANNELS,
-				rate=RATE,
-				input=True,
-				input_device_index=0,
-				frames_per_buffer=1024)
-
-	stream.start_stream()
-	in_speech_bf = True
-	decoder.start_utt()
-
 	#initialize e'rrythang
 	global lastSavedTime, text
 	lastSavedTime = time.time()
@@ -221,138 +188,98 @@ def listen():
 	#start listening
 	print "Listening"
 
-	while True:
-
-		passedTime = time.time() - lastSavedTime
-
+	with sr.Microphone(device_index=0) as source:
+		print "Microphone accessed!"
+		audio = r.listen(source, timeout=5)
 		try:
-			buf = stream.read(CHUNK)
-			# print buf
-			if buf:
-				decoder.process_raw(buf, False, False)
-				counter = 0
-				try:
-					if  decoder.hyp().hypstr != '':
-						text = str(decoder.hyp().hypstr).lower()
-						# passedTime = time.time() - lastSavedTime
-						print "Elapsed time: " + str(passedTime)
-						# print text
+			# if time.time() - lastSavedTime >= 1:
+			try: 
+				say = r.recognize_ibm(audio, username=IBM_USERNAME, password=IBM_PASSWORD)
+				say = say.lower()
+				text += say
+				print say
+				if say != '':
+					saySplit = say.split(" ")
+					print saySplit
+					listen()
+					return
+				else:
+					print "Done"
+			except sr.UnknownValueError:
+			    print("IBM Speech to Text could not understand audio")
+			    listen()
+			    return
+			except sr.RequestError as e:
+			    print("Could not request results from IBM Speech to Text service; {0}".format(e))
+			    listen()
+			    return
+		except sr.WaitTimeoutError:
+			print "Timed out!"
 
-						#looking for "silences" where there's no new speech coming in
-						if paused == text:
-							print paused
-							silence += 1
-						else:
-							silence = 0
+		#finishing up the response
+		if text != '':
 
-						paused = text
+			searchText = text + ' ' + toAnswerLower
+			print "text to search: " + searchText
 
-						# m = OSCMessage()
-						# m.setAddress("/print")
-						# m.append(text)
-						# client2.send(m)
+			# print "Total elapsed time: " + str(passedTime)
 
-					else:
-						print "BLANK"
+			newTags = searchWords(searchText)
+			print len(newTags)	
 
-				except AttributeError:
-					pass
+			for t in newTags[0]:
+				if t != '':
+					totalTags[0].append(t)
 
-				if decoder.get_in_speech():
-					sys.stdout.write('.')
-					sys.stdout.flush()
-					print decoder.get_in_speech()
+			for t in newTags[1]:
+				if t != '':
+					totalTags[1].append(t)
 
-				elif decoder.get_in_speech() == False and passedTime > pauseLength:
-
-					#finishing up the response
-					if text != '':
-
-						searchText = text + ' ' + toAnswerLower
-						print "text to search: " + searchText
-
-						print "Total elapsed time: " + str(passedTime)
-
-						newTags = searchWords(searchText)
-						print len(newTags)	
-
-						for t in newTags[0]:
-							if t != '':
-								totalTags[0].append(t)
-
-						for t in newTags[1]:
-							if t != '':
-								totalTags[1].append(t)
-
-						#appending appropriate time passed tags
-						if passedTime < 10:
-							totalTags[1].append('short')
-							totalTags[1].append('current')
-						elif passedTime > 200:
-							totalTags[1].append('staller')
+			#appending appropriate time passed tags
+			# if passedTime < 10:
+			# 	totalTags[1].append('short')
+			# 	totalTags[1].append('current')
+			# elif passedTime > 200:
+			# 	totalTags[1].append('staller')
 
 
-						if len(totalTags[1]) == 0:
-							totalTags[1].append('current')
+			if len(totalTags[1]) == 0:
+				totalTags[1].append('current')
 
-						print "tags collected: " + str(totalTags)
+			print "tags collected: " + str(totalTags)
 
-						print "final text: " + text
-						with open(savedFile, "a") as toSave:
-							toSave.write('Response: ' + text)
-							toSave.write('\n')
+			print "final text: " + text
+			with open(savedFile, "a") as toSave:
+				toSave.write('Response: ' + text)
+				toSave.write('\n')
 
-					print "checking follow up"
+		print "checking follow up"
 
-					msg = OSCMessage()
-					msg.setAddress("/print")
-					if sessionTime <= 1800: #if we've still got time
-						if sessionTime >= 900 and booth3 == True:
-							msg.append('')
-							msg.append('*')
-							msg.append('booth3')
-							print "time for a booth 3 question"
-							booth3 = False
-						elif sessionTime >= 600 and booth2 == True:
-							msg.append('')
-							msg.append('*')
-							msg.append('booth2')
-							print "time for a booth 2 question"
-							booth2 = False
-						elif themeOverride != prevThemeOverride:
-							msg.append('')
-							msg.append('*')
-							msg.append(themeOverride)
-							print str(msg)
-							print "MANUALLY OVERRIDDEN"
-						else:
-							msg.append(totalTags[0])
-							msg.append('*')
-							msg.append(totalTags[1])
-							print "message to send: " + str(msg)
-					else: #otherwise, if we've gone for half an hour
-						msg.append('')
-						msg.append('*')
-						msg.append('end')
-					client.send(msg)
-					client.close()
-					# client2.close()
-					prevThemeOverride = themeOverride
-					print "Closed OSC"
-					break
+		msg = OSCMessage()
+		msg.setAddress("/print")
+		if sessionTime <= 1800: #if we've still got time
+			if themeOverride != prevThemeOverride:
+				msg.append('')
+				msg.append('*')
+				msg.append(themeOverride)
+				print str(msg)
+				print "MANUALLY OVERRIDDEN"
+			else:
+				msg.append(totalTags[0])
+				msg.append('*')
+				msg.append(totalTags[1])
+				print "message to send: " + str(msg)
+		else: #otherwise, if we've gone for half an hour
+			msg.append('')
+			msg.append('*')
+			msg.append('end')
+		client.send(msg)
+		client.close()
+		# client2.close()
+		prevThemeOverride = themeOverride
+		print "Closed OSC"
 
-		# this is to account for buffer overflows
-		except IOError as io:
-			print io
-			buf = '\x00'*1024
-			passedTime = 0
-
-	decoder.end_utt()
-	stream.stop_stream()
-	stream.close()
-	p.terminate()
-
-	print "TERMINATED"
+	print "ASKING A QUESTION"
 
 def assignTerms(sentence):
 
@@ -393,7 +320,7 @@ def assignTerms(sentence):
 # define a message-handler function for the server to call.
 def receive_text(addr, tags, stuff, source):
 
-	global sessionTime, savedSessionTime, toAnswer, start
+	global sessionTime, savedSessionTime, toAnswer, start, text
 
 	print "---"
 	print "received new osc msg from %s" % OSC.getUrlStr(source)
@@ -406,6 +333,7 @@ def receive_text(addr, tags, stuff, source):
 		toAnswer = stuff[1]
 		interval = time.time() - savedSessionTime
 		sessionTime += interval
+		text = ''
 		savedSessionTime = time.time()
 		print "total session time: " + str(sessionTime)
 		listen()
@@ -433,7 +361,7 @@ def receive_gui(addr, tags, stuff, source):
 
 ##### MAIN SCRIPT #####
 #load questions
-with open('files/questions-test.csv', 'rU') as f:
+with open('files/questions.csv', 'rU') as f:
 	reader = csv.reader(f, delimiter=",")
 	for row in reader:
 		toAdd = []
