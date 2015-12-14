@@ -36,15 +36,17 @@ print "Questions loaded!"
 #checking if there's a follow up question present
 def checkFollowUp(tagList):
 
-	if 'booth2' in tagList[1]:
+	if 'booth2' in tagList[1] and boothQuestionsUsed[1] == False:
 		returnQuestion([[], ["booth2"]])
 		terms.append('booth2')
-		boothQuestionCounter[1] = 1
+		boothQuestionsUsed[1] = True
+		# boothQuestionCounter[1] = 1
 	
-	if 'booth3' in tagList[1]:
+	if 'booth3' in tagList[1] and boothQuestionsUsed[2] == False:
 		returnQuestion([[], ["booth3"]])
 		terms.append('booth3')
-		boothQuestionCounter[2] = 1
+		boothQuestionsUsed[2] = True
+		# boothQuestionCounter[2] = 1
 
 	#check staller first
 	if 'staller' in tagList[1] and len(stallers) > 0:
@@ -154,6 +156,7 @@ def checkFollowUp(tagList):
 	# 			rand = randrange(0, len(terms))
 	# 			newTerm = terms[rand]
 	# 			returnQuestion([[], [newTerm]])
+
 	#if no conditions have been met after all of that, return a question the normal way
 	else:
 		returnQuestion(tagList)
@@ -339,16 +342,18 @@ def returnQuestion(tagList):
 				returnQuestion([[], ['warmup']])
 				return
 			elif 'warmup' in questionSet[currentQuestion]:
-				boothQuestionsUsed[0] = True
+				# boothQuestionsUsed[0] = True
 				returnQuestion([[], ['gettingwarmer']])
 				return
 			elif 'gettingwarmer' in questionSet[currentQuestion]:
-				boothQuestionsUsed[0] = True
+				# boothQuestionsUsed[0] = True
 				returnQuestion([[], ['aboutyou']])
 				return
-			elif 'aboutyou' in questionSet[currentQuestion]:
+			elif 'aboutyou' in questionSet[currentQuestion] and boothQuestionsUsed[0] = False:
 				# boothQuestionsUsed[0] = True
 				returnQuestion([[], ['booth1']])
+				boothQuestionsUsed[0] = True
+				terms.append('booth1')
 			else:
 				#replacing all "current" indicators with the current theme
 				indices = [i for i, x in enumerate(tagList[1]) if x == "current"]
