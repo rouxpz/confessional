@@ -1,4 +1,5 @@
 from os import system
+import os.path
 import re, sys, time, csv, pyaudio, wave, collections
 from sphinxbase import *
 from pocketsphinx import *
@@ -433,16 +434,21 @@ def receive_gui(addr, tags, stuff, source):
 
 ##### MAIN SCRIPT #####
 #load questions
-with open('files/questions-test.csv', 'rU') as f:
+with open('files/questions.csv', 'rU') as f:
 	reader = csv.reader(f, delimiter=",")
 	for row in reader:
 		toAdd = []
-		for i in range(0, len(row)):
-			toAdd.append(row[i])
-		questionSet.append(toAdd);
+		if os.path.exists('/Users/tpf2/Dropbox/current booth questions/processed/' + row[1] + '.wav') == True:
+			for i in range(0, len(row)):
+				toAdd.append(row[i])
+			# print row[1]
+			questionSet.append(toAdd);
+		else:
+			print "No file found for " + row[0]
+			continue
 
 print "Questions loaded!"
-# print questionSet
+print len(questionSet)
 
 #load emotion lexicon
 with open('files/NRC-emotion-lexicon-wordlevel-alphabetized-v0.92.csv', 'rb') as f:
